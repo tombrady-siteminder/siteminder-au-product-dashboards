@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="/siteminder-au-product-dashboards/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SiteMinder Product Dashboards</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f7; color: #1d1d1f; min-height: 100vh; }
+    header { background: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 24px 40px; }
+    header h1 { font-size: 22px; font-weight: 600; color: #1d1d1f; display: flex; align-items: center; gap: 10px; }
+    header h1 img { width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0; }
+    header p { font-size: 14px; color: #6e6e73; margin-top: 4px; }
+    main { max-width: 960px; margin: 48px auto; padding: 0 40px; }
+    h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #6e6e73; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .card { background: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; transition: box-shadow 0.15s ease, border-color 0.15s ease; display: block; }
+    .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: #c0c0c0; }
+    .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+    .card p { font-size: 14px; color: #6e6e73; line-height: 1.5; }
+    .card .published { font-size: 12px; color: #aeaeb2; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><img src="/siteminder-au-product-dashboards/favicon.png" alt="SiteMinder">SiteMinder Dashboards</h1>
+    <p>Internal use only</p>
+  </header>
+  <main>
+    <h2>Dashboards</h2>
+    <div class="grid">
+      <a class="card" target="_blank" rel="noopener noreferrer" href="./ai-for-hoteliers/">
+        <h3>AI for Hoteliers</h3>
+        <p>A presentation deck showing hoteliers how AI can transform their property &mdash; from guest profiling and occupancy gap analysis to win-back campaigns and direct booking optimisation.</p>
+        <div class="published">Published 15 Jun 2026</div>
+      </a>
+      <!-- cards go here -->
+    </div>
+  </main>
+  <script>
+    const MONTHS = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+    function parseDate(card) {
+      const m = card.querySelector(".published").textContent.match(/(\d+)\s+(\w+)\s+(\d+)/);
+      return m ? new Date(+m[3], MONTHS[m[2]], +m[1]) : new Date(0);
+    }
+    const grid = document.querySelector(".grid");
+    [...grid.querySelectorAll(".card")].sort((a, b) => parseDate(b) - parseDate(a)).forEach(c => grid.appendChild(c));
+  </script>
+</body>
+</html>

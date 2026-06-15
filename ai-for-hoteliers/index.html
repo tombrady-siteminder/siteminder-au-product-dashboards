@@ -1,0 +1,2795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI for Hoteliers — SiteMinder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700;900&family=Spline+Sans:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #006DFF;
+    --blue-light: rgba(0,109,255,0.1);
+    --blue-mid: rgba(0,109,255,0.18);
+    --lime: #C8FF1A;
+    --lime-400: #DEFF76;
+    --lime-300: #ECFFB3;
+    --lime-200: #F7FFE6;
+    --slate: #2F3B42;
+    --slate-mid: #3a4a52;
+    --neutral-900: #333333;
+    --neutral-600: #717171;
+    --neutral-400: #9e9e9e;
+    --cyan-400: #91F0FA;
+    --cyan-200: #D6FBFF;
+    --purple-200: #D8CFFF;
+    --white: #FFFFFF;
+
+    /* Brand gradient (signature SiteMinder) */
+    --bg-gradient: linear-gradient(135deg,
+      #e8e6ff 0%,
+      #c8eeff 20%,
+      #d6fbff 35%,
+      #e8ffdb 55%,
+      #ecffb3 75%,
+      #deff76 100%
+    );
+
+    --card-bg: rgba(255,255,255,0.72);
+    --card-border: rgba(255,255,255,0.9);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--neutral-900);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ── SLIDES ── */
+  .deck { width: 100vw; height: calc(100vh - 55px); margin-top: 55px; position: relative; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 32px 80px 88px;
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+  }
+
+  .slide.exit-up {
+    opacity: 0;
+    transform: translateY(-24px);
+    pointer-events: none;
+  }
+
+  /* ── HEADER BAR ── */
+  .top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 36px;
+    z-index: 200;
+  }
+
+  .brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: var(--neutral-600);
+  }
+
+  /* SiteMinder "S" icon */
+  .sm-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .sm-icon svg { width: 28px; height: 28px; }
+
+  .sm-wordmark {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--blue);
+    letter-spacing: -0.01em;
+  }
+
+  .sm-divider {
+    color: var(--neutral-400);
+    margin: 0 2px;
+  }
+
+  .sm-tagline {
+    font-size: 13px;
+    color: var(--neutral-600);
+  }
+
+  .slide-counter {
+    font-size: 12px;
+    color: var(--neutral-600);
+    font-weight: 400;
+  }
+
+  /* ── PROGRESS ── */
+  .progress {
+    position: fixed;
+    top: 52px;
+    left: 0;
+    height: 3px;
+    background: var(--blue);
+    transition: width 0.5s ease;
+    z-index: 200;
+  }
+
+  /* ── NAV ── */
+  .nav {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 100;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border);
+    padding: 10px 22px;
+    border-radius: 50px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  }
+
+  .nav-btn {
+    background: none;
+    border: 1.5px solid rgba(0,109,255,0.25);
+    color: var(--blue);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+
+  .nav-btn:hover {
+    background: var(--blue-mid);
+    border-color: var(--blue);
+  }
+
+  .nav-dots { display: flex; gap: 7px; align-items: center; }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(0,109,255,0.2);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .dot.active {
+    background: var(--blue);
+    transform: scale(1.5);
+  }
+
+  /* ══ GLASS CARD ══ */
+  .glass-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  /* ══ EYEBROW ══ */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--blue-light);
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 50px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(0,109,255,0.15);
+  }
+
+  .lime-tag {
+    background: #C8FF1A;
+    color: var(--slate);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 50px;
+    display: inline-block;
+  }
+
+  /* ══════════════════════
+     SLIDE 0 — HERO
+  ══════════════════════ */
+  #slide-0 { text-align: center; }
+
+  #slide-0 .hero-card {
+    max-width: 720px;
+    padding: 64px 72px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #slide-0 .hero-card::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, rgba(200,255,26,0.4), transparent 70%);
+    border-radius: 50%;
+  }
+
+  #slide-0 .hero-card::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,109,255,0.12), transparent 70%);
+    border-radius: 50%;
+  }
+
+  .hero-h1 {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: clamp(44px, 6vw, 76px);
+    line-height: 1.05;
+    color: var(--neutral-900);
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-h1 .highlight {
+    color: var(--blue);
+  }
+
+  .hero-sub {
+    font-size: 17px;
+    color: var(--neutral-600);
+    line-height: 1.65;
+    max-width: 480px;
+    margin: 0 auto 36px;
+    font-weight: 400;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-badge-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+  }
+
+  .stat-pill {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(0,109,255,0.12);
+    border-radius: 50px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--neutral-900);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stat-pill .num { color: var(--blue); }
+
+  /* ══════════════════════
+     SLIDE 1 — CHALLENGES
+  ══════════════════════ */
+  #slide-1 { align-items: flex-start; }
+
+  .challenge-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 940px;
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .challenge-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 24px 22px;
+    transition: all 0.25s;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  .challenge-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,109,255,0.12);
+    border-color: rgba(0,109,255,0.3);
+  }
+
+  .challenge-num {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--blue);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    background: var(--blue-light);
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 50px;
+  }
+
+  .challenge-title {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--neutral-900);
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .challenge-desc {
+    font-size: 13px;
+    color: var(--neutral-600);
+    line-height: 1.65;
+  }
+
+  /* ══════════════════════
+     SLIDE 2 — AGENDA
+  ══════════════════════ */
+  #slide-2 { align-items: flex-start; }
+
+  .agenda-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 760px;
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .agenda-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 24px;
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.22s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+
+  .agenda-item:hover {
+    transform: translateX(6px);
+    border-color: rgba(0,109,255,0.3);
+    box-shadow: 0 6px 24px rgba(0,109,255,0.1);
+    background: rgba(255,255,255,0.88);
+  }
+
+  .agenda-item:hover .agenda-arrow { color: var(--blue); transform: translateX(3px); }
+
+  .agenda-num-badge {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--blue-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--blue);
+    flex-shrink: 0;
+  }
+
+  .agenda-content { flex: 1; }
+
+  .agenda-title {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--neutral-900);
+  }
+
+  .agenda-sub {
+    font-size: 12px;
+    color: var(--neutral-600);
+    margin-top: 2px;
+  }
+
+  .agenda-arrow {
+    color: var(--neutral-400);
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+
+  .product-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 50px;
+    text-transform: uppercase;
+  }
+
+  .chip-blue { background: var(--blue-light); color: var(--blue); }
+  .chip-slate { background: rgba(47,59,66,0.1); color: var(--slate); }
+  .chip-lime { background: rgba(200,255,26,0.35); color: #3a5200; }
+  .chip-cyan { background: rgba(145,240,250,0.3); color: #006070; }
+
+  /* ══════════════════════
+     DEMO SLIDES
+  ══════════════════════ */
+  .demo-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    width: 100%;
+    max-width: 1100px;
+    align-items: start;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .demo-left {}
+
+  .section-eyebrow {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 12px;
+  }
+
+  .demo-h2 {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: clamp(28px, 3vw, 44px);
+    line-height: 1.1;
+    color: var(--neutral-900);
+    margin-bottom: 16px;
+  }
+
+  .demo-h2 .blue { color: var(--blue); }
+  .demo-h2 .lime-text { color: #3a6b00; }
+
+  .demo-body {
+    font-size: 14px;
+    color: var(--neutral-600);
+    line-height: 1.7;
+    margin-bottom: 20px;
+    font-weight: 400;
+  }
+
+  .products-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 24px;
+  }
+
+  .impact-strip {
+    display: flex;
+    gap: 20px;
+    padding: 16px 20px;
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+  }
+
+  .impact-item {}
+
+  .impact-num {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--blue);
+    line-height: 1;
+  }
+
+  .impact-label {
+    font-size: 11px;
+    color: var(--neutral-600);
+    margin-top: 3px;
+    line-height: 1.3;
+    max-width: 120px;
+  }
+
+  .adv-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(200,255,26,0.35);
+    border: 1px solid rgba(200,255,26,0.6);
+    color: #3a5200;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 50px;
+    margin-bottom: 16px;
+  }
+
+  /* ══ PROMPT PANEL ══ */
+  .prompt-panel {
+    background: var(--slate);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  }
+
+  .prompt-panel-header {
+    background: var(--slate-mid);
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ph-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ph-dots {
+    display: flex; gap: 5px;
+  }
+
+  .ph-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+  }
+
+  .ph-dot.r { background: #FF5F57; }
+  .ph-dot.y { background: #FEBC2E; }
+  .ph-dot.g { background: #28C840; }
+
+  .ph-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .copy-btn {
+    background: rgba(200,255,26,0.15);
+    border: 1px solid rgba(200,255,26,0.35);
+    color: var(--lime);
+    font-family: 'Source Sans 3', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover {
+    background: rgba(200,255,26,0.25);
+    border-color: rgba(200,255,26,0.6);
+  }
+
+  .copy-btn.copied {
+    background: rgba(0,200,120,0.15);
+    border-color: rgba(0,200,120,0.4);
+    color: #00c878;
+  }
+
+  .prompt-body {
+    padding: 20px 18px;
+    font-family: 'Source Sans 3', monospace;
+    font-size: 12.5px;
+    line-height: 1.85;
+    color: rgba(255,255,255,0.82);
+    max-height: 310px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+
+  .prompt-body .ph {
+    color: var(--lime);
+    font-style: italic;
+  }
+
+  .prompt-body .kw {
+    color: var(--cyan-400);
+    font-weight: 600;
+  }
+
+  .prompt-body .comment {
+    color: rgba(255,255,255,0.38);
+    font-size: 11.5px;
+  }
+
+  .dual-prompt-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .prompt-sublabel {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 6px;
+  }
+
+  /* ══════════════════════
+     SLIDE HEADINGS
+  ══════════════════════ */
+  .page-heading {
+    width: 100%;
+    max-width: 940px;
+    margin-bottom: 0;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .page-h2 {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: clamp(32px, 4vw, 52px);
+    line-height: 1.05;
+    color: var(--neutral-900);
+  }
+
+  .page-h2 .blue { color: var(--blue); }
+
+  /* ══════════════════════
+     SLIDE 9 — TIPS
+  ══════════════════════ */
+  #slide-9 { align-items: flex-start; }
+
+  /* ══════════════════════
+     OUTRO
+  ══════════════════════ */
+  #slide-outro {
+    background: none;
+    text-align: center;
+  }
+
+  .outro-card {
+    max-width: 820px;
+    padding: 60px 72px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .outro-card::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(200,255,26,0.35), transparent 70%);
+    border-radius: 50%;
+  }
+
+  .outro-card::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: -80px;
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, rgba(0,109,255,0.1), transparent 70%);
+    border-radius: 50%;
+  }
+
+  .outro-h1 {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: clamp(32px, 4.5vw, 60px);
+    line-height: 1.1;
+    color: var(--neutral-900);
+    margin-bottom: 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .outro-h1 .blue { color: var(--blue); }
+
+  .outro-sub {
+    font-size: 16px;
+    color: var(--neutral-600);
+    line-height: 1.65;
+    max-width: 500px;
+    margin: 0 auto 36px;
+    font-weight: 400;
+    position: relative;
+    z-index: 1;
+  }
+
+  .outro-stats {
+    display: flex;
+    gap: 2px;
+    justify-content: center;
+    margin-bottom: 32px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .outro-stat {
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.9);
+    padding: 20px 28px;
+    text-align: center;
+  }
+
+  .outro-stat:first-child { border-radius: 14px 0 0 14px; }
+  .outro-stat:last-child { border-radius: 0 14px 14px 0; }
+
+  .outro-stat .snum {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 32px;
+    color: var(--blue);
+    line-height: 1;
+  }
+
+  .outro-stat .slbl {
+    font-size: 11px;
+    color: var(--neutral-600);
+    margin-top: 4px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .cta-lockup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 15px;
+    color: var(--neutral-600);
+    position: relative;
+    z-index: 1;
+  }
+
+  .sm-wordmark-lg {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--blue);
+  }
+
+  /* ── SECTION LABEL LEFT ── */
+  #slide-1 .page-heading, #slide-2 .page-heading { align-items: flex-start; }
+
+  /* Responsive sizing */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ══ SHOW OUTPUT BUTTON ══ */
+  .show-output-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.22s;
+    box-shadow: 0 4px 16px rgba(0,109,255,0.28);
+  }
+  .show-output-btn:hover { background:#0050CC; box-shadow:0 6px 22px rgba(0,109,255,0.4); transform:translateY(-1px); }
+
+  /* ══ OUTPUT OVERLAY ══ */
+  .output-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    opacity: 0;
+    transform: translateX(36px);
+    transition: opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1);
+    pointer-events: none;
+    overflow-y: auto;
+    padding: 64px 80px 60px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .output-overlay.active { opacity:1; transform:translateX(0); pointer-events:all; }
+  body.out-open .nav { opacity:0; pointer-events:none; transition:opacity 0.3s; }
+  body.out-open .progress { opacity:0; }
+
+  .out-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.9);
+    color: var(--neutral-600);
+    padding: 7px 16px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .out-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 860px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .insights-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 9999;
+    background: var(--bg-gradient);
+    opacity: 0;
+    transform: translateX(36px);
+    transition: opacity 0.45s cubic-bezier(0.16,1,0.3,1), transform 0.45s cubic-bezier(0.16,1,0.3,1);
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 60px 40px;
+    overflow-y: auto;
+  }
+  .insights-overlay.active { opacity:1; transform:translateX(0); pointer-events:all; }
+  .insights-img-wrap {
+    width: 100%;
+    max-width: 700px;
+    margin-top: 16px;
+  }
+  .insights-img-wrap svg, .insights-img-wrap img {
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+  }
+  .out-back:hover { color:var(--blue); }
+
+  .out-hdr { display:flex; align-items:flex-start; gap:14px; margin-bottom:20px; max-width:860px; width:100%; margin-left:auto; margin-right:auto; }
+  .out-ey {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--blue); background: var(--blue-light); border: 1px solid rgba(0,109,255,0.15);
+    padding: 4px 12px; border-radius: 50px; white-space: nowrap; margin-top: 4px; flex-shrink: 0;
+  }
+  .out-h2 { font-family:'Spline Sans',sans-serif; font-weight:700; font-size:22px; color:var(--neutral-900); line-height:1.15; margin-bottom:3px; }
+  .out-context { font-size:12px; color:var(--neutral-600); }
+
+  .out-grid { display:flex; flex-direction:column; gap:14px; max-width:860px; width:100%; margin-left:auto; margin-right:auto; }
+
+  .oc {
+    background: var(--card-bg); backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border); border-radius: 14px;
+    padding: 16px 18px; box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+  }
+  .oc-lbl { font-size:10px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--neutral-400); margin-bottom:10px; }
+
+  /* trait rows */
+  .trait-row { display:flex; align-items:baseline; gap:8px; padding:5px 0; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; }
+  .trait-row:last-child { border-bottom:none; }
+  .tk { color:var(--neutral-400); font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; width:100px; flex-shrink:0; }
+  .tv { color:var(--neutral-900); font-weight:600; }
+  .ts { color:var(--neutral-400); font-size:11px; margin-left:3px; }
+
+  .profile-quote {
+    background: linear-gradient(135deg,rgba(0,109,255,0.05),rgba(145,240,250,0.08));
+    border-left: 3px solid var(--blue); padding: 10px 14px;
+    border-radius: 0 8px 8px 0; font-size: 12px; font-style: italic;
+    color: var(--neutral-600); line-height: 1.7; margin-top: 10px;
+  }
+
+  /* action list */
+  .action-item { display:flex; gap:10px; padding:7px 0; border-bottom:1px solid rgba(0,0,0,0.05); align-items:flex-start; }
+  .action-item:last-child { border-bottom:none; }
+  .an { width:18px; height:18px; background:var(--blue); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; flex-shrink:0; margin-top:2px; }
+  .at { font-size:12px; color:var(--neutral-600); line-height:1.5; }
+  .at strong { color:var(--neutral-900); }
+
+  /* data table */
+  .dt { width:100%; border-collapse:collapse; }
+  .dt th { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--neutral-400); padding:4px 8px; text-align:left; border-bottom:1px solid rgba(0,0,0,0.07); }
+  .dt td { font-size:12px; color:var(--neutral-600); padding:6px 8px; border-bottom:1px solid rgba(0,0,0,0.04); }
+  .dt tr:last-child td { border-bottom:none; }
+  .dt .dhi { color:var(--blue); font-weight:700; }
+  .dt .dlo { color:#cc4433; }
+  .dt .dok { color:#33aa55; font-weight:600; }
+
+  /* CSV block */
+  .csv-block { background:var(--slate); border-radius:10px; overflow:hidden; margin-top:8px; }
+  .csv-top { background:var(--slate-mid); padding:7px 12px; display:flex; align-items:center; gap:6px; }
+  .csv-body { padding:8px 12px; font-family:monospace; font-size:10.5px; color:rgba(255,255,255,0.6); line-height:1.85; overflow-x:auto; white-space:nowrap; }
+  .csv-body .ch { color:var(--cyan-400); font-weight:700; }
+  .csv-body .cv { color:rgba(255,255,255,0.85); }
+
+  /* occ chart */
+  .occ-row { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
+  .occ-lbl { font-size:11px; color:var(--neutral-600); width:100px; flex-shrink:0; line-height:1.2; }
+  .occ-wrap { flex:1; height:7px; background:rgba(0,0,0,0.07); border-radius:4px; overflow:hidden; }
+  .occ-bar { height:100%; border-radius:4px; }
+  .ob-good { background:var(--blue); }
+  .ob-gap { background:#FF5F57; }
+  .ob-ok { background:#FEBC2E; }
+  .occ-pct { font-size:11px; font-weight:700; color:var(--neutral-900); width:30px; text-align:right; }
+
+  /* package cards */
+  .pkg { background:rgba(200,255,26,0.1); border:1px solid rgba(200,255,26,0.4); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+  .pkg:last-child { margin-bottom:0; }
+  .pkg-n { font-family:'Spline Sans',sans-serif; font-weight:700; font-size:13px; color:var(--neutral-900); margin-bottom:3px; }
+  .pkg-d { font-size:11.5px; color:var(--neutral-600); line-height:1.5; }
+  .pkg-p { font-family:'Spline Sans',sans-serif; font-weight:700; font-size:16px; color:var(--blue); margin-top:6px; }
+  .pkg-ps { font-size:10px; color:var(--neutral-400); font-weight:400; }
+
+  /* guest chips */
+  .gchips { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+  .gchip { display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.82); border:1px solid rgba(0,0,0,0.07); border-radius:50px; padding:2px 9px 2px 3px; font-size:11px; color:var(--neutral-900); }
+  .gav { width:18px; height:18px; border-radius:50%; background:var(--blue-light); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; }
+
+  /* OTA promo rows */
+  .ota-promo { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; }
+  .ota-promo:last-child { border-bottom:none; }
+  .ota-badge { font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:2px 8px; border-radius:4px; flex-shrink:0; }
+  .ob-bdc { background:rgba(0,109,255,0.1); color:var(--blue); }
+  .ob-exp { background:rgba(255,166,0,0.12); color:#a06600; }
+  .ota-text { color:var(--neutral-600); line-height:1.4; font-size:11.5px; }
+  .ota-text strong { color:var(--neutral-900); }
+
+  /* ══ EMAIL CLIENT ══ */
+  .email-client { background:var(--slate); border-radius:14px; overflow:hidden; box-shadow:0 12px 36px rgba(0,0,0,0.18); }
+  .email-chrome { background:var(--slate-mid); padding:10px 16px; display:flex; align-items:center; gap:8px; }
+  .email-chrome-lbl { font-size:11px; font-weight:600; color:rgba(255,255,255,0.45); letter-spacing:0.1em; text-transform:uppercase; }
+  .email-inner { display:flex; min-height:260px; }
+  .email-sb { width:130px; background:rgba(0,0,0,0.18); border-right:1px solid rgba(255,255,255,0.04); padding:10px 6px; flex-shrink:0; }
+  .esb-lbl { font-size:9px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.22); padding:0 6px 8px; display:block; }
+  .eitem { padding:6px 7px; border-radius:7px; margin-bottom:2px; }
+  .eitem.esel { background:rgba(0,109,255,0.28); }
+  .efrom { font-size:10px; font-weight:700; color:rgba(255,255,255,0.78); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:1px; }
+  .eprev { font-size:9px; color:rgba(255,255,255,0.32); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .email-pane { flex:1; background:#F8F9FA; display:flex; flex-direction:column; min-width:0; }
+  .ep-top { padding:12px 16px 9px; border-bottom:1px solid rgba(0,0,0,0.08); }
+  .ep-subject { font-family:'Spline Sans',sans-serif; font-weight:700; font-size:13px; color:#1a1a1a; margin-bottom:3px; }
+  .ep-meta { font-size:10.5px; color:#aaa; }
+  .ep-meta strong { color:#666; }
+  .ep-body { flex:1; padding:12px 16px; font-size:12px; line-height:1.75; color:#444; overflow-y:auto; }
+  .ep-body p { margin-bottom:8px; }
+  .ecta { display:inline-block; background:var(--blue); color:white; padding:8px 18px; border-radius:6px; font-weight:700; font-size:11.5px; margin:6px 0 10px; text-decoration:none; }
+  .esig { margin-top:10px; padding-top:8px; border-top:1px solid rgba(0,0,0,0.07); font-size:11px; color:#aaa; line-height:1.6; }
+
+  /* direct booking output */
+  .site-hero { background:linear-gradient(135deg,rgba(0,109,255,0.07),rgba(145,240,250,0.1)); border:1px solid rgba(0,109,255,0.12); border-radius:10px; padding:16px 18px; margin-bottom:10px; }
+  .site-headline { font-family:'Spline Sans',sans-serif; font-weight:700; font-size:18px; color:var(--neutral-900); margin-bottom:4px; }
+  .site-sub { font-size:13px; color:var(--neutral-600); }
+  .benefit-item { display:flex; gap:8px; padding:7px 0; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12.5px; color:var(--neutral-600); align-items:flex-start; }
+  .benefit-item:last-child { border-bottom:none; }
+  .benefit-tick { color:var(--blue); font-weight:700; flex-shrink:0; margin-top:1px; }
+  .benefit-text strong { color:var(--neutral-900); }
+
+  /* meta copy blocks */
+  .meta-copy-block { background:var(--slate); border-radius:10px; padding:12px 14px; margin-top:8px; }
+  .meta-copy-lbl { font-size:9px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:6px; }
+  .meta-copy-text { font-family:monospace; font-size:11.5px; color:rgba(255,255,255,0.82); line-height:1.7; }
+
+  /* pricing output */
+  .price-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12px; }
+  .price-row:last-child { border-bottom:none; }
+  .pr-window { font-weight:600; color:var(--neutral-900); flex:0 0 90px; }
+  .pr-event { color:var(--neutral-600); font-size:11px; flex:1; }
+  .pr-rate { font-family:'Spline Sans',sans-serif; font-weight:700; color:var(--blue); font-size:13px; flex-shrink:0; }
+  .pr-tag { font-size:9px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:2px 7px; border-radius:50px; flex-shrink:0; }
+  .pr-raise { background:rgba(0,180,100,0.12); color:#006633; }
+  .pr-promo { background:rgba(255,95,87,0.1); color:#cc2200; }
+
+  .insight-box { background:linear-gradient(135deg,rgba(0,109,255,0.06),rgba(145,240,250,0.1)); border:1px solid rgba(0,109,255,0.15); border-radius:12px; padding:14px 16px; }
+  .insight-lbl { font-size:10px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--blue); margin-bottom:8px; }
+  .insight-text { font-size:12.5px; color:var(--neutral-600); line-height:1.7; }
+  .insight-text strong { color:var(--neutral-900); }
+
+  /* ══ DR+ VIDEO SLIDE ══ */
+
+  .drplus-top button { pointer-events: all; }
+
+  .drplus-back:hover { background:rgba(255,255,255,0.2); color:white; }
+
+
+  .drplus-video-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .drplus-hint.hidden { opacity: 0; }
+
+
+
+  /* ══ OVERLAY SIDE-BY-SIDE LAYOUT ══ */
+  .overlay-body {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .overlay-img-col {
+    flex: 1;
+    min-width: 0;
+  }
+  .overlay-bullets-col {
+    width: 270px;
+    flex-shrink: 0;
+    padding-top: 8px;
+  }
+  .overlay-bullets-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin: 0 0 14px 0;
+  }
+  .overlay-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .overlay-bullets li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--neutral-900);
+    line-height: 1.55;
+  }
+  .overlay-bullet-title {
+    display: block;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--neutral-900);
+    margin-bottom: 2px;
+  }
+  .overlay-bullet-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--neutral-900);
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+
+  .insights-img-wrap {
+    position: relative;
+    cursor: zoom-in;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+
+  .insights-img-wrap img {
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+    transform-origin: 0 0;
+    transition: transform 0.1s ease;
+    user-select: none;
+    display: block;
+  }
+
+  .insights-img-wrap.zoomed {
+    cursor: grab;
+    overflow: visible;
+  }
+
+  .insights-img-wrap.zoomed.grabbing {
+    cursor: grabbing;
+  }
+
+  .zoom-hint {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 5px 12px;
+    border-radius: 50px;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(6px);
+  }
+
+  .insights-img-wrap.zoomed .zoom-hint {
+    opacity: 0;
+  }
+
+  .zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    justify-content: center;
+  }
+
+  .zoom-btn {
+    background: rgba(255,255,255,0.8);
+    border: 1px solid rgba(0,109,255,0.2);
+    color: var(--blue);
+    font-size: 18px;
+    font-weight: 700;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+    line-height: 1;
+  }
+
+  .zoom-btn:hover {
+    background: var(--blue);
+    color: white;
+    border-color: var(--blue);
+  }
+
+  .zoom-level-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--neutral-600);
+    min-width: 42px;
+    text-align: center;
+  }
+
+  .zoom-reset-btn {
+    background: rgba(255,255,255,0.8);
+    border: 1px solid rgba(0,109,255,0.2);
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 6px 14px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+  }
+
+  .zoom-reset-btn:hover {
+    background: var(--blue);
+    color: white;
+  }
+
+  #slide-8 { align-items: flex-start; justify-content: flex-start; padding-top: 48px; }
+  #slide-3, #slide-4, #slide-5, #slide-6 { padding-top: 56px; }
+
+  .prompt-guide-wrap {
+    display: flex;
+    gap: 32px;
+    width: 100%;
+    max-width: 940px;
+    margin: 16px auto 0;
+    align-items: stretch;
+    position: relative;
+  }
+
+  /* STEPS PANEL */
+  .prompt-guide-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    transition: flex 0.5s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .pgs-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    transition: all 0.25s;
+    flex: 1;
+    min-height: 0;
+  }
+  .pgs-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0,109,255,0.10);
+    border-color: rgba(0,109,255,0.3);
+  }
+
+  .pgs-num {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--blue);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 32px;
+    opacity: 0.35;
+  }
+
+  .pgs-title {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--neutral-900);
+    margin-bottom: 5px;
+  }
+
+  .pgs-desc {
+    font-size: 13px;
+    color: var(--neutral-600);
+    line-height: 1.6;
+  }
+
+  .prompt-guide-btn {
+    align-self: flex-end;
+    margin-top: 4px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 24px;
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .prompt-guide-btn:hover { opacity: 0.85; transform: translateX(3px); }
+
+  /* DEMO PANEL */
+  .prompt-demo-panel {
+    flex-shrink: 0;
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: width 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s 0.15s;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,109,255,0.10);
+  }
+
+  .prompt-demo-panel.visible {
+    width: 420px;
+    opacity: 1;
+  }
+
+  .pdp-header {
+    padding: 20px 24px 14px;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .pdp-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 4px;
+  }
+
+  .pdp-title {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--neutral-900);
+  }
+
+  .pdp-steps {
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .pdp-step {
+    background: rgba(0,109,255,0.04);
+    border-left: 3px solid var(--blue);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 14px;
+    opacity: 0;
+    transform: translateX(12px);
+    transition: opacity 0.35s, transform 0.35s;
+  }
+
+  .pdp-step.show {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .pdp-step-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .pdp-step-num {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--blue);
+    background: rgba(0,109,255,0.12);
+    padding: 2px 7px;
+    border-radius: 50px;
+  }
+
+  .pdp-step-name {
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--neutral-900);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .pdp-step-text {
+    font-size: 12.5px;
+    color: var(--neutral-600);
+    line-height: 1.6;
+  }
+
+  .pdp-reset-btn {
+    margin: 0 24px 20px;
+    background: none;
+    border: 1px solid var(--card-border);
+    border-radius: 50px;
+    padding: 7px 16px;
+    font-size: 12px;
+    color: var(--neutral-600);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .pdp-reset-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ACTIVE STATE — demo panel visible, steps flex-shrink naturally */
+  .prompt-guide-wrap.demo-active .prompt-guide-steps {
+    flex: 0 0 420px;
+  }
+
+  .prompt-guide-wrap:not(.demo-active) .pgs-card {
+    flex: none;
+    min-height: 110px;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="brand-lockup">
+    <div class="sm-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g clip-path="url(#clip0_6218_4173)">
+          <path d="M0 3.73333C0 1.67147 1.67147 0 3.73333 0H20.2667C22.3285 0 24 1.67147 24 3.73333V20.2667C24 22.3285 22.3285 24 20.2667 24H3.73333C1.67147 24 0 22.3285 0 20.2667V3.73333Z" fill="#006DFF"/>
+          <path d="M13.7265 16.1527L6.7998 17.4124V19.1998L15.4566 17.6235C15.9319 17.5254 16.3612 17.2646 16.6752 16.8834C16.9891 16.5022 17.1693 16.0228 17.1866 15.5228V8.37305L13.7232 9.0029L13.7265 16.1527Z" fill="url(#paint0_linear_6218_4173)"/>
+          <path d="M8.5335 6.37446C8.05915 6.47401 7.63112 6.73559 7.31844 7.11703C7.00577 7.49846 6.82668 7.97748 6.81006 8.47682V15.6266L10.2734 14.9967V7.84697L17.2002 6.58554V4.7998L8.5335 6.37446Z" fill="url(#paint1_linear_6218_4173)"/>
+        </g>
+        <defs>
+          <linearGradient id="paint0_linear_6218_4173" x1="26.4016" y1="18.711" x2="4.34258" y2="9.9774" gradientUnits="userSpaceOnUse">
+            <stop offset="0.140249" stop-color="#DAFF8C"/>
+            <stop offset="0.976057" stop-color="#B8FFFF"/>
+          </linearGradient>
+          <linearGradient id="paint1_linear_6218_4173" x1="26.4019" y1="18.7109" x2="4.34286" y2="9.97736" gradientUnits="userSpaceOnUse">
+            <stop offset="0.140249" stop-color="#DAFF8C"/>
+            <stop offset="0.976057" stop-color="#B8FFFF"/>
+          </linearGradient>
+          <clipPath id="clip0_6218_4173">
+            <rect width="24" height="24" fill="white"/>
+          </clipPath>
+        </defs>
+      </svg>
+    </div>
+    <span class="sm-wordmark">SiteMinder</span>
+    <span class="sm-divider"> | </span>
+    <span class="sm-tagline">We put you in demand.</span>
+  </div>
+  <span class="slide-counter" id="counter">01 / 10</span>
+</div>
+
+<div class="progress" id="progress"></div>
+
+<!-- ── DECK ── -->
+<div class="deck">
+
+<!-- ══ SLIDE 0 — HERO ══ -->
+<div class="slide active" id="slide-0">
+  <div class="glass-card hero-card">
+    <div class="eyebrow">Live Ideas Session</div>
+    <h1 class="hero-h1">AI for<br><span class="highlight">Hoteliers</span></h1>
+    <p class="hero-sub">Four ideas that show how AI can transform your property - from filling empty rooms to finding loyal guests who come back time and time again.</p>
+    <div class="hero-badge-row">
+      <div class="stat-pill"><span class="num">53k+</span> properties trust SiteMinder</div>
+      <div class="stat-pill"><span class="num">300M+</span> room nights annually</div>
+      <div class="stat-pill"><span class="num">450+</span> Distribution channels</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 1 — CHALLENGES ══ -->
+<div class="slide" id="slide-1">
+  <div class="page-heading">
+    <div class="eyebrow">Setting the Scene</div>
+    <h2 class="page-h2">What keeps hoteliers<br><span class="blue">up at night</span></h2>
+  </div>
+  <div class="challenge-grid">
+    <div class="challenge-card">
+      <div class="challenge-num">01</div>
+      <div class="challenge-title">Empty Rooms</div>
+      <div class="challenge-desc">Empty rooms cost you twice — once in lost revenue, and again when discounting to fill them trains guests to wait for a deal.</div>
+    </div>
+    <div class="challenge-card">
+      <div class="challenge-num">02</div>
+      <div class="challenge-title">OTA Dependency</div>
+      <div class="challenge-desc">Every booking through an OTA costs you 15–25% in commission. That's revenue you could keep by owning the guest relationship directly.</div>
+    </div>
+    <div class="challenge-card">
+      <div class="challenge-num">03</div>
+      <div class="challenge-title">Unknown Guests</div>
+      <div class="challenge-desc">You know who checked in — but do you know who your most profitable guests are and how to find more of them?</div>
+    </div>
+    <div class="challenge-card">
+      <div class="challenge-num">04</div>
+      <div class="challenge-title">Retention</div>
+      <div class="challenge-desc">Most hotels work hard to attract new guests but do very little to bring past guests back — even though past guests are far cheaper to reach and far more likely to book.</div>
+    </div>
+    <div class="challenge-card">
+      <div class="challenge-num">05</div>
+      <div class="challenge-title">Operational Time</div>
+      <div class="challenge-desc">Managing rooms, rates, reports, and emails — the admin burden consumes hours that could be better spent on your guests.</div>
+    </div>
+    <div class="challenge-card">
+      <div class="challenge-num">06</div>
+      <div class="challenge-title">Missed Upsells</div>
+      <div class="challenge-desc">Most properties miss opportunities to upsell guests before and during their stay — leaving revenue on the table with every booking.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 2 — AGENDA ══ -->
+<div class="slide" id="slide-2">
+  <div class="page-heading">
+    <div class="eyebrow">Today's Ideas</div>
+    <h2 class="page-h2">Four ideas. <span class="blue">Four ways AI pays off.</span></h2>
+  </div>
+  <div class="agenda-list">
+    <div class="agenda-item" onclick="goTo(3)">
+      <div class="agenda-num-badge">01</div>
+      <div class="agenda-content">
+        <div class="agenda-title">Know Your Best Guest</div>
+        <div class="agenda-sub">Business Intelligence → Lookalike audience targeting</div>
+      </div>
+      <div class="product-chips">
+        <span class="chip chip-blue">Business Intelligence</span>
+        <span class="chip chip-cyan">Channel Manager</span>
+      </div>
+      <div class="agenda-arrow">→</div>
+    </div>
+    <div class="agenda-item" onclick="goTo(4)">
+      <div class="agenda-num-badge">02</div>
+      <div class="agenda-content">
+        <div class="agenda-title">Fill the Gap</div>
+        <div class="agenda-sub">Identify low-occupancy windows → targeted win-back campaigns</div>
+      </div>
+      <div class="product-chips">
+        <span class="chip chip-lime">Dynamic Revenue Plus</span>
+        <span class="chip chip-blue">Guest Engagement</span>
+      </div>
+      <div class="agenda-arrow">→</div>
+    </div>
+    <div class="agenda-item" onclick="goTo(5)">
+      <div class="agenda-num-badge">03</div>
+      <div class="agenda-content">
+        <div class="agenda-title">Win Back & Upsell</div>
+        <div class="agenda-sub">Re-engagement campaigns for past guests and upsell campaigns for new guests</div>
+      </div>
+      <div class="product-chips">
+        <span class="chip chip-blue">Guest Engagement</span>
+      </div>
+      <div class="agenda-arrow">→</div>
+    </div>
+    <div class="agenda-item" onclick="goTo(6)">
+      <div class="agenda-num-badge">04</div>
+      <div class="agenda-content">
+        <div class="agenda-title">Beat the OTAs at Their Own Game</div>
+        <div class="agenda-sub">Optimise your direct channel to drive more bookings</div>
+      </div>
+      <div class="product-chips">
+        <span class="chip chip-blue">Booking Engine</span>
+        <span class="chip chip-blue">Guest Engagement</span>
+      </div>
+      <div class="agenda-arrow">→</div>
+    </div>
+    
+  </div>
+</div>
+
+<!-- ══ SLIDE 3 — IDEA 1 ══ -->
+<div class="slide" id="slide-3">
+  <div class="demo-layout">
+    <div class="demo-left">
+      <div class="section-eyebrow">Idea 01</div>
+      <h2 class="demo-h2">Know Your<br><span class="blue">Best Guest</span></h2>
+      <p class="demo-body">Most hotels collect data but never interrogate it. AI can turn your PMS export into a precise profile of your highest-value guests — and then help you find thousands more exactly like them on social media.</p>
+      <div class="products-row">
+        <span class="chip chip-blue">Business Intelligence</span>
+        <span class="chip chip-cyan">Channel Manager</span>
+      </div>
+      <div class="adv-badge">⚡ Advanced: Meta Lookalike Audiences</div>
+      <div class="impact-strip">
+        <div class="impact-item">
+          <div class="impact-num">13%</div>
+          <div class="impact-label">Lower cost-per-booking: lookalike vs. interest-based targeting ¹</div>
+        </div>
+        <div style="width:1px;background:rgba(0,0,0,0.08);"></div>
+        <div class="impact-item">
+          <div class="impact-num">41%</div>
+          <div class="impact-label">Lower cost-per-lead: 1% lookalike vs. 10% lookalike ¹</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#999;margin-top:6px;padding:0 2px;">¹ AdEspresso A/B experiments — adespresso.com</div>
+    </div>
+    <div class="demo-right">
+      <div class="dual-prompt-wrap">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--neutral-600);margin-bottom:6px;">Starter Prompt</div>
+          <div class="prompt-panel">
+            <div class="prompt-panel-header">
+              <div class="ph-left">
+                <div class="ph-dots"><div class="ph-dot r"></div><div class="ph-dot y"></div><div class="ph-dot g"></div></div>
+                <span class="ph-label">Guest Profiling</span>
+              </div>
+              <button class="copy-btn" onclick="copyPrompt(this,'p1')">Copy</button>
+            </div>
+            <div class="prompt-body" id="p1">I manage a <span class="ph">[property type]</span> in <span class="ph">[location]</span>. I'm pasting data from six SiteMinder reports below.<br><br><span class="kw">Reservations</span> <span class="comment">// channel, room type, rate plan, total revenue, LOS, lead time, country, extras, referral</span><br><span class="ph">[paste Reservations.csv]</span><br><br><span class="kw">Guest List</span> <span class="comment">// adds gender and organisation not captured in Reservations</span><br><span class="ph">[paste guest.csv]</span><br><br><span class="kw">Channel Mix</span> <span class="comment">// ADR, revenue, LOS, lead time, cancellations by channel</span><br><span class="ph">[paste Channel_Mix.csv]</span><br><br><span class="kw">Source Market</span> <span class="comment">// ADR, revenue, LOS by guest country</span><br><span class="ph">[paste Source_market.csv]</span><br><br><span class="kw">Room Type &amp; Rate Plan</span><br><span class="ph">[paste Room_type.csv and Rate_plan.csv]</span><br><br>Using this data, identify:<br>1. My top 20% of guests by total revenue (room + extras) — what do they share across channel, country, room type, rate plan, LOS and lead time?<br>2. Which channels and source markets deliver the highest ADR <span class="kw">and</span> lowest cancellation rate?<br>3. A one-paragraph <span class="kw">ideal guest profile</span> I can hand to a marketing agency<br>4. Three actions I can take in SiteMinder this week to attract more guests like them</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--neutral-600);margin-bottom:6px;">Advanced: Social Targeting</div>
+          <div class="prompt-panel">
+            <div class="prompt-panel-header">
+              <div class="ph-left">
+                <div class="ph-dots"><div class="ph-dot r"></div><div class="ph-dot y"></div><div class="ph-dot g"></div></div>
+                <span class="ph-label">Meta / Facebook Ads</span>
+              </div>
+              <button class="copy-btn" onclick="copyPrompt(this,'p1b')">Copy</button>
+            </div>
+            <div class="prompt-body" id="p1b">Using the same data from the previous step, generate a CSV I can upload directly to Meta Ads Manager as a Customer List to create a Lookalike Audience. Format it to Meta's exact spec with these column headers:<br><br><span class="kw">email</span> (email address), <span class="kw">phone</span> (phone number with country code), <span class="kw">fn</span> (first name), <span class="kw">ln</span> (last name), <span class="kw">ct</span> (city), <span class="kw">st</span> (state or region), <span class="kw">zip</span> (postcode), <span class="kw">country</span> (country name), <span class="kw">value</span> (lifetime spend)</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:10px;">
+        <button class="show-output-btn" onclick="showOutput('out-1')">Show output →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 4 — IDEA 2 ══ -->
+<div class="slide" id="slide-4">
+  <div class="demo-layout">
+    <div class="demo-left">
+      <div class="section-eyebrow">Idea 02</div>
+      <h2 class="demo-h2">Fill<br><span class="blue">the Gap</span></h2>
+      <p class="demo-body">Every hotel has predictable periods of slower occupancy. AI can spot them in seconds, understand why they happened, and generate a targeted campaign to fill your rooms during these periods.</p>
+      <div class="products-row">
+        <span class="chip chip-lime">Dynamic Revenue Plus</span>
+        <span class="chip chip-blue">Guest Engagement</span>
+      </div>
+      <div class="impact-strip">
+        <div class="impact-item">
+          <div class="impact-num">+19%</div>
+          <div class="impact-label">Avg. revenue increase across 567 hotels using data-driven pricing ⁴</div>
+        </div>
+        <div style="width:1px;background:rgba(0,0,0,0.08);"></div>
+        <div class="impact-item">
+          <div class="impact-num">$36:$1</div>
+          <div class="impact-label">Average return on hotel email marketing spend ⁵</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#999;margin-top:6px;padding:0 2px;">⁴ RoomPriceGenie study, 567 hotels, 9 countries &nbsp;|&nbsp; ⁵ Hotel marketing industry average</div>
+    </div>
+    <div class="demo-right">
+      <div class="prompt-panel">
+        <div class="prompt-panel-header">
+          <div class="ph-left">
+            <div class="ph-dots"><div class="ph-dot r"></div><div class="ph-dot y"></div><div class="ph-dot g"></div></div>
+            <span class="ph-label">Occupancy Gap Analysis + Campaign</span>
+          </div>
+          <button class="copy-btn" onclick="copyPrompt(this,'p2')">Copy</button>
+        </div>
+        <div class="prompt-body" id="p2">I manage a <span class="ph">[property type]</span> and I want to understand where my occupancy gaps are and what I can do to fill them. I'm uploading my SiteMinder reports below — Reservations, Channel Mix, Source Market, Room Type, and Guest data.<br><br><span class="ph">[paste Reservations.csv]</span><br><span class="ph">[paste Channel_Mix.csv]</span><br><span class="ph">[paste Source_market.csv]</span><br><span class="ph">[paste Room_type.csv]</span><br><span class="ph">[paste guest.csv]</span><br><br>Analyse the data and give me a concrete plan to fill my property during these slow periods. The plan should include:<br>1. <span class="kw">Where my occupancy gaps are</span> and why they might be occurring<br>2. <span class="kw">Packages</span> I could offer to address these gaps<br>3. <span class="kw">Email campaigns</span> to past guests that are ready to send<br>4. A <span class="kw">list of guests</span> to target with each campaign, selected based on their relevance to it<br>5. <span class="kw">OTA promotions</span> to activate via my Channel Manager to align with the campaign</div>
+      </div>
+      <div style="text-align:right;margin-top:10px;">
+        <button class="show-output-btn" onclick="showOutput('out-2')">Show output →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 5 — IDEA 3 ══ -->
+<div class="slide" id="slide-5">
+  <div class="demo-layout">
+    <div class="demo-left">
+      <div class="section-eyebrow">Idea 03</div>
+      <h2 class="demo-h2">Win Back &<br><span class="blue">Upsell</span></h2>
+      <p class="demo-body">Your greatest revenue opportunity isn't a new guest — it's the ones you already have. AI writes the perfect email to win back guests who've drifted away, and the perfect upsell sequence to get more from guests who are already booked.</p>
+      <div class="products-row">
+        <span class="chip chip-blue">Guest Engagement</span>
+      </div>
+      <div class="impact-strip">
+        <div class="impact-item">
+          <div class="impact-num">29%</div>
+          <div class="impact-label">More spend per stay from returning guests vs. new ones ²</div>
+        </div>
+        <div style="width:1px;background:rgba(0,0,0,0.08);"></div>
+        <div class="impact-item">
+          <div class="impact-num">50%</div>
+          <div class="impact-label">Open rate for pre-arrival emails — vs. ~20% industry avg. ³</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#999;margin-top:6px;padding:0 2px;">² Gallup study via Revfine &nbsp;|&nbsp; ³ Revinate Hotel Email Benchmark Report</div>
+    </div>
+    <div class="demo-right">
+      <div class="dual-prompt-wrap">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--neutral-600);margin-bottom:6px;">Win Back</div>
+          <div class="prompt-panel">
+            <div class="prompt-panel-header">
+              <div class="ph-left">
+                <div class="ph-dots"><div class="ph-dot r"></div><div class="ph-dot y"></div><div class="ph-dot g"></div></div>
+                <span class="ph-label">Re-engagement Email</span>
+              </div>
+              <button class="copy-btn" onclick="copyPrompt(this,'p3')">Copy</button>
+            </div>
+            <div class="prompt-body" id="p3">I want to win back guests who stayed at my hotel but haven't returned in 12+ months.<br><br><span class="kw">PART 1 — Write the email</span><br>My hotel: <span class="ph">[hotel name and 1-sentence description]</span><br>My offer: <span class="ph">[e.g. 15% off / free breakfast / room upgrade]</span><br>Tone: <span class="ph">[warm and personal / professional / fun and playful]</span><br><br>Write a re-engagement email with:<br>- A subject line<br>- Preview text (under 90 characters)<br>- Email body that feels personal, not like an email blast campaign<br>- A single, clear call-to-action<br>- A deadline for the offer (urgency without being pushy)</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--neutral-600);margin-bottom:6px;">Upsell</div>
+          <div class="prompt-panel">
+            <div class="prompt-panel-header">
+              <div class="ph-left">
+                <div class="ph-dots"><div class="ph-dot r"></div><div class="ph-dot y"></div><div class="ph-dot g"></div></div>
+                <span class="ph-label">Pre-arrival & Post-stay Sequence</span>
+              </div>
+              <button class="copy-btn" onclick="copyPrompt(this,'p4')">Copy</button>
+            </div>
+            <div class="prompt-body" id="p4">Create a pre-arrival upsell email for guests who are already booked.<br><br><span class="kw">My hotel details:</span><br>Name &amp; type: <span class="ph">[e.g. [Your Hotel], 28-room boutique]</span><br>Upsell services: <span class="ph">[spa, restaurant, upgrades, airport transfer, tours]</span><br>Typical guest: <span class="ph">[leisure couples / families / business travellers]</span><br>Brand voice: <span class="ph">[warm / professional / luxurious / casual]</span><br><br><span class="kw">Email — 7 days before arrival:</span><br>Warm welcome + 2–3 upsell add-ons with a "book now" link<br><br>Please provide a subject line, preview text, and full body copy for this email.</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:10px;">
+        <button class="show-output-btn" onclick="showOutput('out-3')">Show output →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 6 — IDEA 4 ══ -->
+<div class="slide" id="slide-6">
+  <div class="demo-layout">
+    <div class="demo-left">
+      <div class="section-eyebrow">Idea 04</div>
+      <h2 class="demo-h2">Beat the OTAs<br><span class="blue">at Their Game</span></h2>
+      <p class="demo-body">OTAs charge 15–25% commission. Every direct booking through your Booking Engine saves you that cost. AI helps you write the compelling copy and incentives that make guests choose your direct channel over OTAs.</p>
+      <div class="products-row">
+        <span class="chip chip-blue">Booking Engine</span>
+        <span class="chip chip-blue">Guest Engagement</span>
+      </div>
+      <div class="impact-strip">
+        <div class="impact-item">
+          <div class="impact-num">+79%</div>
+          <div class="impact-label">Booking Engine uplift (VOMO Island Resort)</div>
+        </div>
+        <div style="width:1px;background:rgba(0,0,0,0.08);"></div>
+        <div class="impact-item">
+          <div class="impact-num">0%</div>
+          <div class="impact-label">Commission on direct bookings</div>
+        </div>
+      </div>
+    </div>
+    <div class="demo-right">
+      <div class="prompt-panel">
+        <div class="prompt-panel-header">
+          <div class="ph-left">
+            <div class="ph-dots"><div class="ph-dot r"></div><div class="ph-dot y"></div><div class="ph-dot g"></div></div>
+            <span class="ph-label">Direct Booking Strategy + Copy</span>
+          </div>
+          <button class="copy-btn" onclick="copyPrompt(this,'p5')">Copy</button>
+        </div>
+        <div class="prompt-body" id="p5">I want to improve my direct booking channel and shift more reservations away from OTAs.<br><br><span class="kw">My property:</span><br>Name &amp; type: <span class="ph">[e.g. [Your Hotel], 28-room boutique]</span><br>What I can offer direct bookers that OTAs can't match: <span class="ph">[e.g. free breakfast / early check-in / room upgrade / flexible cancellation / welcome gift]</span><br><br>Please create:<br>1. <span class="kw">Homepage headline + subheading</span> to convince visitors to book direct instead of via an OTA<br>2. <span class="kw">"Why book direct?" section</span>: 3–4 short benefit statements designed to sit prominently on my homepage or booking page — written as guest-facing copy, not bullet points<br>3. <span class="kw">Cancellation recovery campaign</span>: subject line + body targeting guests who cancelled a booking in the last month and haven't rebooked — with a compelling reason to return direct<br>4. <span class="kw">Metasearch ad copy</span>: Google Hotel Ads description (under 200 chars) + TripAdvisor tagline<br>5. <span class="kw">OTA-proof direct booking incentive</span>: suggest one value-add I can offer direct bookers that complies with OTA rate parity rules — so I'm not discounting rates, but still giving guests a reason to book direct</div>
+      </div>
+      <div style="text-align:right;margin-top:10px;">
+        <button class="show-output-btn" onclick="showOutput('out-4')">Show output →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 7 — PROMPT GUIDE ══ -->
+<div class="slide" id="slide-8">
+  <div class="page-heading">
+    <div class="eyebrow">Prompt Guide</div>
+    <h2 class="page-h2">How to write a <span class="blue">great prompt</span></h2>
+  </div>
+
+  <div class="prompt-guide-wrap" id="prompt-guide-wrap">
+
+    <!-- LEFT: 3-step guide (always visible, slides left on demo) -->
+    <div class="prompt-guide-steps" id="prompt-guide-steps">
+      <div class="pgs-card">
+        <div class="pgs-num">01</div>
+        <div class="pgs-body">
+          <div class="pgs-title">Set the stage</div>
+          <div class="pgs-desc">Tell AI who you are and what you're working with. Your property type, location, guest profile, and any relevant context. The more specific your situation, the more relevant the answer.</div>
+        </div>
+      </div>
+      <div class="pgs-card">
+        <div class="pgs-num">02</div>
+        <div class="pgs-body">
+          <div class="pgs-title">Define the task</div>
+          <div class="pgs-desc">Be clear about what you want AI to do. Write, analyse, summarise, or build, and specify the format. A subject line and three-paragraph email is more useful than "write me an email."</div>
+        </div>
+      </div>
+      <div class="pgs-card">
+        <div class="pgs-num">03</div>
+        <div class="pgs-body">
+          <div class="pgs-title">Set the rules</div>
+          <div class="pgs-desc">Add any constraints on tone, length, audience, or things to avoid. If you have an example of what good looks like, include it. Rules turn a generic output into one that fits your brand.</div>
+        </div>
+      </div>
+
+      <button class="prompt-guide-btn" id="prompt-guide-btn" onclick="togglePromptDemo()">
+        See it in action →
+      </button>
+    </div>
+
+    <!-- RIGHT: Live demo panel (hidden until click) -->
+    <div class="prompt-demo-panel" id="prompt-demo-panel">
+      <div class="pdp-header">
+        <div class="pdp-eyebrow">Example prompt</div>
+        <div class="pdp-title">Win-back email for a lapsed guest</div>
+      </div>
+
+      <div class="pdp-steps">
+        <div class="pdp-step" id="pdp-step-1">
+          <div class="pdp-step-label">
+            <span class="pdp-step-num">01</span>
+            <span class="pdp-step-name">Set the stage</span>
+          </div>
+          <div class="pdp-step-text">I manage a 14-room boutique hotel in the Yarra Valley, Victoria. We focus on weekend escapes for couples aged 30–55. Our tone is warm and personal.</div>
+        </div>
+
+        <div class="pdp-step" id="pdp-step-2">
+          <div class="pdp-step-label">
+            <span class="pdp-step-num">02</span>
+            <span class="pdp-step-name">Define the task</span>
+          </div>
+          <div class="pdp-step-text">Write a re-engagement email for guests who haven't returned in 12+ months. Include a subject line, preview text under 90 characters, a short email body, and a single call-to-action with a deadline.</div>
+        </div>
+
+        <div class="pdp-step" id="pdp-step-3">
+          <div class="pdp-step-label">
+            <span class="pdp-step-num">03</span>
+            <span class="pdp-step-name">Set the rules</span>
+          </div>
+          <div class="pdp-step-text">Keep it under 120 words. Don't use the words "exclusive" or "deal." The offer is 15% off for stays booked before 30 June. Make it feel personal, not like a mass campaign.</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+
+
+<!-- ══ SLIDE 10 — OUTRO ══ -->
+<div class="slide" id="slide-outro">
+  <div class="glass-card outro-card">
+    <div class="eyebrow">Live Ideas Session</div>
+    <h1 class="outro-h1">SiteMinder's <span class="blue">AI advantage.</span></h1>
+    <p class="outro-sub">SiteMinder's intelligence is built on real hospitality data from 53,000+ properties worldwide and over 4 billion data points. That means every insight is tailored to your property and your market.</p>
+    <div class="outro-stats">
+      <div class="outro-stat">
+        <div class="snum">53K+</div>
+        <div class="slbl">Properties trust SiteMinder</div>
+      </div>
+      <div class="outro-stat">
+        <div class="snum">300M+</div>
+        <div class="slbl">Room nights annually</div>
+      </div>
+      <div class="outro-stat">
+        <div class="snum">450+</div>
+        <div class="slbl">Distribution channels</div>
+      </div>
+    </div>
+    <div class="cta-lockup">
+      <span class="sm-wordmark-lg">SiteMinder</span>
+      <span style="color:var(--neutral-400);">|</span>
+      <span>We put you in demand.</span>
+      <span style="color:var(--neutral-400);">·</span>
+      <span style="color:var(--blue);font-weight:600;">siteminder.com/start-free-trial</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     OUTPUT OVERLAYS
+══════════════════════════════════ -->
+
+<!-- ══ OUTPUT 1 — KNOW YOUR BEST GUEST ══ -->
+<div class="output-overlay" id="out-1">
+  <div class="out-top-bar">
+    <button class="out-back" onclick="backToSlide(3)">← Back to prompt</button>
+    <button class="out-back" onclick="showInsights()">See how with Insights →</button>
+  </div>
+  <div class="out-hdr">
+    <span class="out-ey">Idea 01 — Output</span>
+    <div>
+      <div class="out-h2">Know Your Best Guest</div>
+      <div class="out-context">Based on 12 months data from a fictional property</div>
+    </div>
+  </div>
+  <div class="out-grid">
+    <div>
+      <div class="oc" style="margin-bottom:14px;">
+        <div class="oc-lbl">Channel & Market Ranking — ADR vs Cancellation Rate</div>
+        <table class="dt">
+          <tr><th>Channel</th><th>ADR</th><th>Cancel Rate</th><th>Verdict</th></tr>
+          <tr><td class="dhi">Direct</td><td class="dhi">$342</td><td class="dok">4%</td><td class="dhi">★ Prioritise</td></tr>
+          <tr><td>Airbnb</td><td>$318</td><td class="dok">6%</td><td>Strong</td></tr>
+          <tr><td>Expedia</td><td>$274</td><td>19%</td><td>Monitor</td></tr>
+          <tr><td class="dlo">Booking.com</td><td class="dlo">$249</td><td class="dlo">27%</td><td class="dlo">Restrict</td></tr>
+        </table>
+        <div style="margin-top:12px;">
+          <table class="dt">
+            <tr><th>Source Market</th><th>Avg. ADR</th><th>Avg. LOS</th></tr>
+            <tr><td class="dhi">United Kingdom</td><td class="dhi">$358</td><td>5.1 nights</td></tr>
+            <tr><td>Australia</td><td>$330</td><td>3.8 nights</td></tr>
+            <tr><td>Germany</td><td>$312</td><td>4.4 nights</td></tr>
+            <tr><td class="dlo">Local QLD</td><td class="dlo">$214</td><td>1.6 nights</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="oc" style="margin-bottom:14px;">
+        <div class="oc-lbl">Top 20% Guest Profile — Shared Traits</div>
+        <div class="trait-row"><span class="tk">Channel</span><span class="tv">Direct (62%)</span><span class="ts">then Airbnb (21%)</span></div>
+        <div class="trait-row"><span class="tk">Source Market</span><span class="tv">Australia (48%), UK (29%)</span><span class="ts">Germany 11%</span></div>
+        <div class="trait-row"><span class="tk">Room Type</span><span class="tv">Ocean Suite, Garden Suite</span><span class="ts">85% of top revenue</span></div>
+        <div class="trait-row"><span class="tk">Avg. ADR</span><span class="tv">$342/night</span><span class="ts">vs $218 bottom 80%</span></div>
+        <div class="trait-row"><span class="tk">Avg. LOS</span><span class="tv">4.2 nights</span><span class="ts">vs 1.9 nights other guests</span></div>
+        <div class="trait-row"><span class="tk">Lead Time</span><span class="tv">38 days avg.</span><span class="ts">planned, non-impulsive</span></div>
+        <div class="trait-row"><span class="tk">Extras Spend</span><span class="tv">$94/stay</span><span class="ts">spa, wine, late checkout</span></div>
+        <div class="profile-quote">"Your ideal guest is an Australian or British couple aged 35–55, booking directly or via Airbnb 5–6 weeks ahead. They stay 4+ nights in an Ocean or Garden Suite, spend around $342/night, and rarely cancel. They seek coastal relaxation and meaningful experiences — and respond strongly to personalised packages and local recommendations."</div>
+      </div>
+      <div class="oc">
+        <div class="oc-lbl">3 Actions This Week in SiteMinder</div>
+        <div class="action-item"><span class="an">1</span><div class="at"><strong>Create a "Direct Only" rate</strong> — add a complimentary bottle of local wine on direct bookings. Hide the perk from OTAs. Watch direct share climb.</div></div>
+        <div class="action-item"><span class="an">2</span><div class="at"><strong>Set 3-night minimum on Booking.com</strong> for Ocean and Garden Suites — filters out low-value short stays and protects your ADR.</div></div>
+        <div class="action-item"><span class="an">3</span><div class="at"><strong>Upload guest list to Facebook (Meta) Ads Manager</strong> as a Customer List. Build a 1% lookalike audience seeded from your top guests.</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="oc">
+        <div class="oc-lbl">Facebook Customer List — CSV Preview (Output 1)</div>
+        <div class="csv-block">
+          <div class="csv-top">
+            <div class="ph-dots"><div class="ph-dot r"></div><div class="ph-dot y"></div><div class="ph-dot g"></div></div>
+            <span class="ph-label">customer_list_top_guests.csv</span>
+          </div>
+          <div class="csv-body">
+            <div class="ch">email,phone,fn,ln,ct,st,zip,country,value</div>
+            <div><span class="cv"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d2b7bfbfb3fcba92b5bfb3bbbefcb1bdbf">[email&#160;protected]</a>,+61412345678,Emma,Harrison,Noosa,QLD,4567,Australia,2840</span></div>
+            <div><span class="cv"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fd979c90988ed38abd92888991929296d39e9290">[email&#160;protected]</a>,+447890123456,James,Wilson,London,,SW1A,United Kingdom,3120</span></div>
+            <div><span class="cv"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2e5d4f5c4f4600456e474d42415b4a004d4143">[email&#160;protected]</a>,+61398765432,Sarah,Kim,Melbourne,VIC,3000,Australia,1980</span></div>
+            <div style="color:rgba(255,255,255,0.25);font-style:italic;">... 47 more rows</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ OUTPUT 2 — FILL THE GAP ══ -->
+<div class="output-overlay" id="out-2">
+  <div class="out-top-bar">
+    <button class="out-back" onclick="backToSlide(4)">← Back to prompt</button>
+    <button class="out-back" onclick="showForecasting()">See how with Forecasting →</button>
+  </div>
+  <div class="out-hdr">
+    <span class="out-ey">Idea 02 — Output</span>
+    <div>
+      <div class="out-h2">Fill the Gap — Occupancy Analysis &amp; Campaign Plan</div>
+      <div class="out-context">[Your Hotel] · Data period: Jan–Dec 2024</div>
+    </div>
+  </div>
+  <div class="out-grid">
+    <div>
+      <div class="oc" style="margin-bottom:14px;">
+        <div class="oc-lbl">Occupancy Gap Analysis</div>
+
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--neutral-400);margin-bottom:8px;">By Day of Week</div>
+        <div class="occ-row"><div class="occ-lbl">Fri–Sun</div><div class="occ-wrap"><div class="occ-bar ob-good" style="width:91%"></div></div><div class="occ-pct">91%</div></div>
+        <div class="occ-row"><div class="occ-lbl">Mon–Thu ⚠</div><div class="occ-wrap"><div class="occ-bar ob-gap" style="width:41%"></div></div><div class="occ-pct" style="color:#FF5F57;">41%</div></div>
+
+        <div style="border-top:1px solid rgba(0,0,0,0.07);margin:12px 0;"></div>
+
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--neutral-400);margin-bottom:8px;">By Month</div>
+        <div class="occ-row"><div class="occ-lbl">Nov–Dec</div><div class="occ-wrap"><div class="occ-bar ob-good" style="width:85%"></div></div><div class="occ-pct">85%</div></div>
+        <div class="occ-row"><div class="occ-lbl">Jun–Aug</div><div class="occ-wrap"><div class="occ-bar ob-good" style="width:78%"></div></div><div class="occ-pct">78%</div></div>
+        <div class="occ-row"><div class="occ-lbl">Sep–Oct ⚠</div><div class="occ-wrap"><div class="occ-bar ob-ok" style="width:58%"></div></div><div class="occ-pct" style="color:#aa7700;">58%</div></div>
+        <div class="occ-row"><div class="occ-lbl">Apr–May ⚠</div><div class="occ-wrap"><div class="occ-bar ob-gap" style="width:52%"></div></div><div class="occ-pct" style="color:#FF5F57;">52%</div></div>
+
+        <div style="margin-top:10px;font-size:12px;color:var(--neutral-600);line-height:1.6;padding:10px 12px;background:rgba(255,95,87,0.06);border-radius:8px;border-left:3px solid #FF5F57;">
+          <strong style="color:#cc2200;">Gap insight:</strong> Mid-week occupancy is 50 percent below weekend occupancy. Shoulder months April–May and September–October underperform by 30%. These are your highest-priority windows — and both are fixable with targeted offers to past guests.
+        </div>
+      </div>
+      <div class="oc">
+        <div class="oc-lbl">Recommended Packages</div>
+        <div class="pkg">
+          <div class="pkg-n">🌿 Mid-week Recharge</div>
+          <div class="pkg-d">2 nights Sun–Thu · breakfast included · late 12pm checkout · welcome bottle of local wine</div>
+          <div class="pkg-p">$285<span class="pkg-ps">/night (was $342)</span></div>
+        </div>
+        <div class="pkg">
+          <div class="pkg-n">🍂 Autumn Coastal Escape</div>
+          <div class="pkg-d">3-night minimum · May 1–31 · welcome hamper with local produce</div>
+          <div class="pkg-p">$299<span class="pkg-ps">/night · 3-night min</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="oc" style="margin-bottom:14px;">
+        <div class="oc-lbl">Email Campaigns — Ready to Send</div>
+        <div style="margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--neutral-900);margin-bottom:3px;">Campaign A — Mid-week Recharge</div>
+          <div style="font-size:11.5px;color:var(--neutral-600);margin-bottom:8px;">Subject: <em>"[Your Hotel] is quieter mid-week. That's the point."</em></div>
+          <div class="oc-lbl" style="margin-bottom:4px;">Target list — 42 past mid-week stayers</div>
+          <div class="gchips">
+            <div class="gchip"><div class="gav">EH</div>Emma H.</div>
+            <div class="gchip"><div class="gav">JW</div>James W.</div>
+            <div class="gchip"><div class="gav">SK</div>Sarah K.</div>
+            <div class="gchip"><div class="gav">TR</div>Tom R.</div>
+            <div class="gchip"><div class="gav">LC</div>Lena C.</div>
+            <div class="gchip" style="background:rgba(0,109,255,0.06);border-color:rgba(0,109,255,0.15);color:var(--blue);font-style:italic;">+37 more</div>
+          </div>
+        </div>
+        <div style="border-top:1px solid rgba(0,0,0,0.06);padding-top:12px;">
+          <div style="font-size:12px;font-weight:700;color:var(--neutral-900);margin-bottom:3px;">Campaign B — Autumn Coastal Escape</div>
+          <div style="font-size:11.5px;color:var(--neutral-600);margin-bottom:8px;">Subject: <em>"Noosa in Autumn hits different."</em></div>
+          <div class="oc-lbl" style="margin-bottom:4px;">Target list — 28 past Apr–May stayers</div>
+          <div class="gchips">
+            <div class="gchip"><div class="gav">MP</div>Mark P.</div>
+            <div class="gchip"><div class="gav">AK</div>Anna K.</div>
+            <div class="gchip"><div class="gav">CB</div>Carl B.</div>
+            <div class="gchip" style="background:rgba(0,109,255,0.06);border-color:rgba(0,109,255,0.15);color:var(--blue);font-style:italic;">+25 more</div>
+          </div>
+        </div>
+      </div>
+      <div class="oc">
+        <div class="oc-lbl">OTA Promotions — Activate via Channel Manager</div>
+        <div class="ota-promo">
+          <span class="ota-badge ob-bdc">Booking.com</span>
+          <div class="ota-text"><strong>Early Bird deal</strong> — 15% off for bookings 21+ days ahead · May 1–31 · Midweek only</div>
+        </div>
+        <div class="ota-promo">
+          <span class="ota-badge ob-exp">Expedia</span>
+          <div class="ota-text"><strong>3-night minimum restriction</strong> on Oct shoulder dates — blocks low-value 1-night bookings</div>
+        </div>
+        <div class="ota-promo">
+          <span class="ota-badge ob-bdc">Booking.com</span>
+          <div class="ota-text"><strong>Last Minute Deal on Booking.com</strong> — 10% off within 7 days, Mon–Wed arrivals only</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ OUTPUT 3 — WIN BACK & UPSELL ══ -->
+<div class="output-overlay" id="out-3">
+  <div class="out-top-bar">
+    <button class="out-back" onclick="backToSlide(5)">← Back to prompt</button>
+    <button class="out-back" onclick="showGuestEngagement()">See how with Guest Engagement →</button>
+  </div>
+  <div class="out-hdr">
+    <span class="out-ey">Idea 03 — Output</span>
+    <div>
+      <div class="out-h2">Win Back &amp; Upsell — Email Outputs</div>
+      <div class="out-context">[Your Hotel] · Re-engagement for guests lapsed 12+ months · Upsell sequence for upcoming arrivals</div>
+    </div>
+  </div>
+  <div class="out-grid">
+    <div>
+      <div class="oc-lbl" style="margin-bottom:8px;">● Win Back — Re-engagement Email</div>
+      <div class="email-client">
+        <div class="email-chrome">
+          <div class="ph-dots"><div class="ph-dot r"></div><div class="ph-dot y"></div><div class="ph-dot g"></div></div>
+          <span class="email-chrome-lbl">Mail — [Your Hotel]</span>
+        </div>
+        <div class="email-inner">
+          <div class="email-sb">
+            <span class="esb-lbl">Sent (70 guests)</span>
+            <div class="eitem esel"><div class="efrom">Emma Harrison</div><div class="eprev">We've missed you...</div></div>
+            <div class="eitem"><div class="efrom">James Wilson</div><div class="eprev">We've missed you...</div></div>
+            <div class="eitem"><div class="efrom">Sarah Kim</div><div class="eprev">We've missed you...</div></div>
+            <div class="eitem"><div class="efrom">Tom Reynolds</div><div class="eprev">We've missed you...</div></div>
+          </div>
+          <div class="email-pane">
+            <div class="ep-top">
+              <div class="ep-subject">We've missed you, Emma ☀️</div>
+              <div class="ep-meta">From: <strong>[Your Hotel] &lt;<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e78f828b8b88a7938f82888b8e9182c984888ac98692">[email&#160;protected]</a>&gt;</strong> · Preview: <em>A little something to say welcome back...</em></div>
+            </div>
+            <div class="ep-body">
+              <p>Hi Emma,</p>
+              <p>It's been over a year since your last stay, and we'd love to have you back.</p>
+              <p>To thank you for staying with us in the past, we're offering you <strong>15% off any room, Sunday to Thursday throughout May and June</strong> — no strings attached.</p>
+              <a class="ecta">Book now — offer expires 31 May</a>
+              <p style="font-size:11px;color:#bbb;">Use code <strong>WELCOME15</strong> at checkout, or reply to this email and we'll take care of it.</p>
+              <div class="esig">Warmly,<br><strong>James &amp; [Your Hotel] team</strong><br>[yourhotel.com.au] · (07) 5447 0000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="oc-lbl" style="margin-bottom:8px;">● Upsell</div>
+      <div class="email-client">
+        <div class="email-chrome">
+          <div class="ph-dots"><div class="ph-dot r"></div><div class="ph-dot y"></div><div class="ph-dot g"></div></div>
+          <span class="email-chrome-lbl">Mail — [Your Hotel]</span>
+        </div>
+        <div class="email-inner">
+          <div class="email-sb">
+            <span class="esb-lbl">Sent (14 arrivals)</span>
+            <div class="eitem esel"><div class="efrom">David &amp; Lucy Chen</div><div class="eprev">Your stay is almost here</div></div>
+            <div class="eitem"><div class="efrom">Michael &amp; Jane O.</div><div class="eprev">Your stay is almost here</div></div>
+            <div class="eitem"><div class="efrom">Peter Walsh</div><div class="eprev">Your stay is almost here</div></div>
+          </div>
+          <div class="email-pane">
+            <div class="ep-top">
+              <div class="ep-subject">Your stay at [Your Hotel] is 7 days away 🌊</div>
+              <div class="ep-meta">From: <strong>[Your Hotel] &lt;<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0169646d6d6e417569646e6d6877642f626e6c2f6074">[email&#160;protected]</a>&gt;</strong> · Preview: <em>A few ways to make it even better...</em></div>
+            </div>
+            <div class="ep-body">
+              <p>Hi David and Lucy,</p>
+              <p>We're looking forward to welcoming you next Thursday.</p>
+              <p><strong>🍳 Add breakfast</strong> — Our full Noosa breakfast is $38pp. Reserve yours and wake up to something worth getting out of bed for. <a href="#" style="color:var(--blue);font-weight:600;">Add it →</a></p>
+              <p><strong>💆 Couple's spa treatment</strong> — Our therapists have availability Thu &amp; Fri, from $110pp. <a href="#" style="color:var(--blue);font-weight:600;">Book now →</a></p>
+              <p><strong>🥂 Pre-chill a bottle on arrival</strong> — Whispering Angel rosé waiting in your room. $65, add below.</p>
+              <a class="ecta">Customise your stay →</a>
+              <div class="esig">See you soon,<br><strong>[Your Hotel] team</strong><br>Questions? (07) 5447 0000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+</div>
+
+<!-- ══ OUTPUT 4 — BEAT THE OTAS ══ -->
+<div class="output-overlay" id="out-4">
+  <div class="out-top-bar">
+    <button class="out-back" onclick="backToSlide(6)">← Back to prompt</button>
+    <button class="out-back" onclick="showDirectBooking()">See how with Direct Booking →</button>
+  </div>
+  <div class="out-hdr">
+    <span class="out-ey">Idea 04 — Output</span>
+    <div>
+      <div class="out-h2">Beat the OTAs — Direct Booking Strategy</div>
+      <div class="out-context">[Your Hotel] · Noosa Heads QLD · Direct booking perks: free breakfast, early check-in, room upgrade</div>
+    </div>
+  </div>
+  <div class="out-grid">
+    <div>
+
+      <div class="oc" style="margin-bottom:14px;">
+        <div class="oc-lbl">1. Homepage Headline &amp; Subheading</div>
+        <div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,0,0,0.08);box-shadow:0 4px 20px rgba(0,0,0,0.10);margin-top:6px;">
+          <div style="background:linear-gradient(135deg,#1a3a2a 0%,#2d5a3d 60%,#4a7c5f 100%);padding:28px 28px 24px;position:relative;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.55);text-transform:uppercase;margin-bottom:10px;">THE OLIVE BOUTIQUE HOTEL · NOOSA HEADS</div>
+            <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.25;margin-bottom:8px;">The best price for [Your Hotel]<br>is always right here.</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.80);line-height:1.5;margin-bottom:18px;">Book direct and unlock extras you won't find anywhere else —<br>including a complimentary breakfast and guaranteed best rate.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <div style="background:#C8FF1A;color:#1a3a2a;font-size:11px;font-weight:700;padding:8px 18px;border-radius:50px;cursor:pointer;">Book Direct →</div>
+              <div style="background:rgba(255,255,255,0.15);color:#fff;font-size:11px;font-weight:600;padding:8px 18px;border-radius:50px;border:1px solid rgba(255,255,255,0.3);">View Rooms</div>
+            </div>
+          </div>
+          <div style="background:#fff;padding:14px 20px;display:flex;gap:20px;border-top:1px solid #eee;flex-wrap:wrap;">
+            <div style="font-size:10px;color:#555;display:flex;align-items:center;gap:5px;"><span style="color:#2d5a3d;font-weight:700;">✓</span> Best rate guaranteed</div>
+            <div style="font-size:10px;color:#555;display:flex;align-items:center;gap:5px;"><span style="color:#2d5a3d;font-weight:700;">✓</span> Free breakfast included</div>
+            <div style="font-size:10px;color:#555;display:flex;align-items:center;gap:5px;"><span style="color:#2d5a3d;font-weight:700;">✓</span> Early check-in when available</div>
+            <div style="font-size:10px;color:#555;display:flex;align-items:center;gap:5px;"><span style="color:#2d5a3d;font-weight:700;">✓</span> Room upgrade on request</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="oc">
+        <div class="oc-lbl">2. "Why Book Direct?" — Homepage Section Copy</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+          <div style="background:rgba(0,109,255,0.04);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:10px 14px;">
+            <div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:3px;">Wake up to a complimentary breakfast, on us.</div>
+            <div style="font-size:11px;color:#555;line-height:1.5;">Every direct booking includes a full breakfast for two — not available through Booking.com, Expedia, or any other OTA.</div>
+          </div>
+          <div style="background:rgba(0,109,255,0.04);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:10px 14px;">
+            <div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:3px;">The best rate, guaranteed — or we'll match it.</div>
+            <div style="font-size:11px;color:#555;line-height:1.5;">Found a lower price elsewhere? We'll match it, no questions asked. Book here and you're already getting our best rate.</div>
+          </div>
+          <div style="background:rgba(0,109,255,0.04);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:10px 14px;">
+            <div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:3px;">Arrive early, settle in at your own pace.</div>
+            <div style="font-size:11px;color:#555;line-height:1.5;">Subject to availability, direct bookers are first in line for early check-in — so you can start your stay the moment you arrive.</div>
+          </div>
+          <div style="background:rgba(0,109,255,0.04);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:10px 14px;">
+            <div style="font-size:12px;font-weight:700;color:#1a1a2e;margin-bottom:3px;">We know you by name, not a booking reference.</div>
+            <div style="font-size:11px;color:#555;line-height:1.5;">When you book direct, you're talking to us — not a call centre. We'll remember your preferences, and we'll make sure your stay reflects them.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div>
+
+      <div class="oc-lbl" style="margin-bottom:8px;">● Cancellation Recovery Campaign</div>
+      <div class="email-client">
+        <div class="email-chrome">
+          <div class="ph-dots"><div class="ph-dot r"></div><div class="ph-dot y"></div><div class="ph-dot g"></div></div>
+          <span class="email-chrome-lbl">Mail — [Your Hotel]</span>
+        </div>
+        <div class="email-inner">
+          <div class="email-sb">
+            <span class="esb-lbl">Sent (23 guests · cancelled last 30 days)</span>
+            <div class="eitem esel"><div class="efrom">Sarah Mitchell</div><div class="eprev">We'd love to welcome...</div></div>
+            <div class="eitem"><div class="efrom">James Thornton</div><div class="eprev">We'd love to welcome...</div></div>
+            <div class="eitem"><div class="efrom">Priya Sharma</div><div class="eprev">We'd love to welcome...</div></div>
+            <div class="eitem"><div class="efrom">Luke Patterson</div><div class="eprev">We'd love to welcome...</div></div>
+          </div>
+          <div class="email-pane">
+            <div class="ep-top">
+              <div class="ep-subject">We'd love to welcome you back, Sarah ☀️</div>
+              <div class="ep-meta">From: <strong>[Your Hotel] &lt;<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="aec6cbc2c2c1eedac6cbc1c2c7d8cb80cdc1c380cfdb">[email&#160;protected]</a>&gt;</strong> · Sent to guests who cancelled in last 30 days, not rebooked</div>
+            </div>
+            <div class="ep-body">
+              <p>Hi Sarah,</p>
+              <p>We noticed your recent booking with us didn't go ahead — and we completely understand that plans change.</p>
+              <p>We'd love the chance to welcome you to [Your Hotel]. If timing or flexibility was part of the reason, we want you to know that <strong>guests who book directly with us get free cancellation up to 48 hours before arrival</strong> — no fees, no questions.</p>
+              <p>And because we appreciate you giving us another look, <strong>we've added a complimentary breakfast for two</strong> to any direct booking made this month.</p>
+              <a class="ecta">Book direct and claim your breakfast →</a>
+              <p style="font-size:11px;color:#bbb;">Questions? Reply to this email or call us on (07) 5447 0000 — we're always happy to help.</p>
+              <div class="esig">[Your Hotel] team<br>[yourhotel.com.au]</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="oc" style="margin-top:14px;">
+        <div class="oc-lbl">Metasearch Ad Copy</div>
+        <div class="meta-copy-block">
+          <div class="meta-copy-lbl">Google Hotel Ads — Description (191 chars)</div>
+          <div class="meta-copy-text">Boutique Noosa Heads escape · Best rate guaranteed when you book direct · Complimentary breakfast included · Early check-in available · Room upgrade on request</div>
+        </div>
+        <div class="meta-copy-block" style="margin-top:8px;">
+          <div class="meta-copy-lbl">TripAdvisor Tagline</div>
+          <div class="meta-copy-text">Book direct for our best rate, free breakfast for two &amp; early check-in. [yourhotel.com.au]</div>
+        </div>
+      </div>
+
+      <div class="oc" style="margin-top:14px;">
+        <div class="oc-lbl">OTA-Proof Direct Booking Incentive</div>
+        <div class="insight-box">
+          <div class="insight-text"><strong>A complimentary welcome experience.</strong> Offer direct bookers a small, personal touch on arrival — a bottle of local wine, a handwritten note, or a curated activity guide to Noosa. It costs very little, sits outside OTA rate parity rules entirely, and creates the kind of moment guests post about. OTAs can list your rooms. They can never replicate your hospitality.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ DIRECT BOOKING OVERLAY ══ -->
+<div class="insights-overlay" id="direct-booking-overlay">
+  <div class="out-top-bar">
+    <button class="out-back" onclick="closeDirectBooking()">← Back</button>
+  </div>
+  <div class="overlay-body">
+    <div class="overlay-img-col">
+      <div class="insights-img-wrap" id="direct-booking-website-imgwrap">
+        <img src="https://raw.githubusercontent.com/Brady34/AI-Project/bfe37ed8c51b953e03461217ef45eaef1265cb76/Vomo%20website.png" alt="Direct Booking — Hotel Website" style="width:100%;height:auto;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.10);margin-bottom:16px;">
+      </div>
+      <div class="insights-img-wrap" id="direct-booking-engine-imgwrap" style="margin-top:16px;">
+        <img src="https://raw.githubusercontent.com/Brady34/AI-Project/bfe37ed8c51b953e03461217ef45eaef1265cb76/Vomo%20booking%20engine.png" alt="Direct Booking — Booking Engine" style="width:100%;height:auto;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.10);">
+        <div class="zoom-hint">Click to zoom</div>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomOut('direct-booking-engine-imgwrap')">−</button>
+        <span class="zoom-level-label" id="direct-booking-overlay-zoom-label">100%</span>
+        <button class="zoom-btn" onclick="zoomIn('direct-booking-engine-imgwrap')">+</button>
+        <button class="zoom-reset-btn" onclick="zoomReset('direct-booking-engine-imgwrap')">Reset</button>
+      </div>
+    </div>
+    <div class="overlay-bullets-col">
+      <p class="overlay-bullets-label">Key points</p>
+      <ul class="overlay-bullets">
+        <li><span class="overlay-bullet-dot"></span><span><strong class="overlay-bullet-title">A website and booking engine that converts</strong>VOMO Island Fiji saw a 79% revenue uplift through SiteMinder's booking engine — with 60% of all bookings now coming direct. Every guest who books direct is a guest you own the relationship with.</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn" onclick="prevSlide()">←</button>
+  <div class="nav-dots" id="dots"></div>
+  <button class="nav-btn" onclick="nextSlide()">→</button>
+</nav>
+
+
+<script>
+const CLIP1 = "";
+const CLIP2 = "";
+
+</script><script>
+const SLIDES = ['slide-0','slide-1','slide-2','slide-3','slide-4','slide-5','slide-6','slide-8','slide-outro'];
+const TOTAL = SLIDES.length;
+let current = 0;
+let animating = false;
+
+// Build dots
+const dotsEl = document.getElementById('dots');
+SLIDES.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+});
+
+function goTo(idx) {
+  if (animating || idx === current || idx < 0 || idx >= TOTAL) return;
+  animating = true;
+  const prev = current;
+  current = idx;
+
+  const fromEl = document.getElementById(SLIDES[prev]);
+  const toEl = document.getElementById(SLIDES[current]);
+
+  fromEl.classList.add('exit-up');
+  setTimeout(() => fromEl.classList.remove('active', 'exit-up'), 600);
+  toEl.classList.add('active');
+
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+  document.getElementById('counter').textContent =
+    String(current + 1).padStart(2, '0') + ' / ' + String(TOTAL).padStart(2, '0');
+  document.getElementById('progress').style.width = ((current / (TOTAL - 1)) * 100) + '%';
+
+  setTimeout(() => { animating = false; }, 600);
+}
+
+function nextSlide() { goTo(current + 1); }
+function prevSlide() { goTo(current - 1); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
+});
+
+function copyPrompt(btn, id) {
+  const el = document.getElementById(id);
+  const text = el.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    const range = document.createRange();
+    range.selectNode(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    window.getSelection().removeAllRanges();
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+document.getElementById('progress').style.width = '0%';
+
+let activeOutput = null;
+
+function showOutput(id) {
+  if (activeOutput) document.getElementById(activeOutput).classList.remove('active');
+  activeOutput = id;
+  document.getElementById(id).classList.add('active');
+  document.body.classList.add('out-open');
+  document.getElementById(id).scrollTop = 0;
+}
+
+function closeOutput() {
+  if (activeOutput) {
+    document.getElementById(activeOutput).classList.remove('active');
+    activeOutput = null;
+  }
+  document.body.classList.remove('out-open');
+}
+
+function showDirectBooking() {
+  document.getElementById('direct-booking-overlay').classList.add('active');
+}
+
+function closeDirectBooking() {
+  document.getElementById('direct-booking-overlay').classList.remove('active');
+}
+
+function showGuestEngagement() {
+  document.getElementById('guest-engagement-overlay').classList.add('active');
+}
+
+function closeGuestEngagement() {
+  document.getElementById('guest-engagement-overlay').classList.remove('active');
+}
+
+function showInsights() {
+  document.getElementById('insights-overlay').classList.add('active');
+}
+
+function closeInsights() {
+  document.getElementById('insights-overlay').classList.remove('active');
+}
+
+function showForecasting() {
+  document.getElementById('forecasting-overlay').classList.add('active');
+}
+
+function closeForecasting() {
+  document.getElementById('forecasting-overlay').classList.remove('active');
+}
+
+function backToSlide(n) {
+  if (activeOutput) {
+    document.getElementById(activeOutput).classList.remove('active');
+    activeOutput = null;
+  }
+  document.body.classList.remove('out-open');
+  // Clear ALL inline styles first so CSS classes take full control again
+  SLIDES.forEach(function(id, i) {
+    var el = document.getElementById(id);
+    el.style.opacity = '';
+    el.style.transform = '';
+    el.style.pointerEvents = '';
+    el.classList.remove('active', 'exit-up');
+  });
+  // Now use CSS class to show correct slide
+  document.getElementById(SLIDES[n]).classList.add('active');
+  current = n;
+  animating = false;
+  document.querySelectorAll('.dot').forEach(function(d, i) {
+    d.classList.toggle('active', i === n);
+  });
+  var counter = document.getElementById('counter');
+  if (counter) counter.textContent = String(n + 1).padStart(2, '0') + ' / ' + String(TOTAL).padStart(2, '0');
+  var progress = document.getElementById('progress');
+  if (progress) progress.style.width = ((n / (TOTAL - 1)) * 100) + '%';
+}
+
+function togglePromptDemo() {
+  const wrap = document.getElementById('prompt-guide-wrap');
+  const panel = document.getElementById('prompt-demo-panel');
+  const btn = document.getElementById('prompt-guide-btn');
+  const active = wrap.classList.toggle('demo-active');
+
+  if (active) {
+    panel.classList.add('visible');
+    btn.textContent = '← Back';
+    ['pdp-step-1','pdp-step-2','pdp-step-3'].forEach(function(id, i) {
+      setTimeout(function() {
+        document.getElementById(id).classList.add('show');
+      }, 300 + i * 180);
+    });
+  } else {
+    panel.classList.remove('visible');
+    btn.textContent = 'See it in action →';
+    ['pdp-step-1','pdp-step-2','pdp-step-3'].forEach(function(id) {
+      document.getElementById(id).classList.remove('show');
+    });
+  }
+}
+
+</script>
+
+<!-- ══ INSIGHTS OVERLAY ══ -->
+<div class="insights-overlay" id="insights-overlay">
+  <div class="out-top-bar">
+    <button class="out-back" onclick="closeInsights()">← Back</button>
+  </div>
+  <div class="overlay-body">
+    <div class="overlay-img-col">
+      <div class="insights-img-wrap" id="insights-overlay-imgwrap">
+        <img src="https://raw.githubusercontent.com/Brady34/AI-Project/491d50045c0749e420455aaaca2600c189243fdf/AI%20summaries%204.png" alt="SiteMinder Insights — Performance Overview" style="width:100%;height:auto;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.10);">
+        <div class="zoom-hint">Click to zoom</div>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomOut('insights-overlay-imgwrap')">−</button>
+        <span class="zoom-level-label" id="insights-overlay-zoom-label">100%</span>
+        <button class="zoom-btn" onclick="zoomIn('insights-overlay-imgwrap')">+</button>
+        <button class="zoom-reset-btn" onclick="zoomReset('insights-overlay-imgwrap')">Reset</button>
+      </div>
+    </div>
+    <div class="overlay-bullets-col">
+      <p class="overlay-bullets-label">Key points</p>
+      <ul class="overlay-bullets">
+        <li><span class="overlay-bullet-dot"></span><span><strong class="overlay-bullet-title">Instant clarity, no prompting required</strong>SiteMinder surfaces AI-generated summaries the moment you log in, so you always know where to focus and what to do next.</span></li>
+        <li><span class="overlay-bullet-dot"></span><span><strong class="overlay-bullet-title">Your whole market, not just a few competitors</strong>SiteMinder iQ benchmarks your property against every hotel in your destination market, revealing distribution gaps, pricing opportunities and source market shifts you'd otherwise miss.</span></li>
+        <li><span class="overlay-bullet-dot"></span><span><strong class="overlay-bullet-title">Always benchmarking against what matters</strong>Machine learning continuously refines your competitive set as the market evolves, so your benchmarking stays relevant without any manual upkeep.</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FORECASTING OVERLAY ══ -->
+<div class="insights-overlay" id="forecasting-overlay">
+  <div class="out-top-bar">
+    <button class="out-back" onclick="closeForecasting()">← Back</button>
+  </div>
+  <div class="overlay-body">
+    <div class="overlay-img-col">
+      <div class="insights-img-wrap" id="forecasting-overlay-imgwrap">
+        <img src="https://raw.githubusercontent.com/Brady34/AI-Project/491d50045c0749e420455aaaca2600c189243fdf/Forecast%204.png" alt="SiteMinder Insights — Forecasting" style="width:100%;height:auto;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.10);">
+        <div class="zoom-hint">Click to zoom</div>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomOut('forecasting-overlay-imgwrap')">−</button>
+        <span class="zoom-level-label" id="forecasting-overlay-zoom-label">100%</span>
+        <button class="zoom-btn" onclick="zoomIn('forecasting-overlay-imgwrap')">+</button>
+        <button class="zoom-reset-btn" onclick="zoomReset('forecasting-overlay-imgwrap')">Reset</button>
+      </div>
+    </div>
+    <div class="overlay-bullets-col">
+      <p class="overlay-bullets-label">Key points</p>
+      <ul class="overlay-bullets">
+        <li><span class="overlay-bullet-dot"></span><span><strong class="overlay-bullet-title">Act before demand shifts, not after</strong>SiteMinder shows whether your hotel is ahead, behind or on pace with your destination market, so you can make pricing decisions proactively.</span></li>
+        <li><span class="overlay-bullet-dot"></span><span><strong class="overlay-bullet-title">Forecasts built on real hospitality data</strong>Predictions are drawn from 53,000+ properties worldwide — not generic AI guesses — making them specific to your property and market conditions.</span></li>
+        <li><span class="overlay-bullet-dot"></span><span><strong class="overlay-bullet-title">Insight and action in one place</strong>Unlike an LLM, SiteMinder connects insight directly to action — adjust pricing and strategy in the same platform, without copying outputs between tools.</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GUEST ENGAGEMENT OVERLAY ══ -->
+<div class="insights-overlay" id="guest-engagement-overlay">
+  <div class="out-top-bar">
+    <button class="out-back" onclick="closeGuestEngagement()">← Back</button>
+  </div>
+  <div class="overlay-body">
+    <div class="overlay-img-col">
+      <div class="insights-img-wrap" id="guest-engagement-overlay-imgwrap">
+        <img src="https://raw.githubusercontent.com/Brady34/AI-Project/2a80eb368d568f489a006c5fab80d495a691a5f7/GuestEngagement.png" alt="SiteMinder Guest Engagement" style="width:100%;height:auto;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.10);">
+        <div class="zoom-hint">Click to zoom</div>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomOut('guest-engagement-overlay-imgwrap')">−</button>
+        <span class="zoom-level-label" id="guest-engagement-overlay-zoom-label">100%</span>
+        <button class="zoom-btn" onclick="zoomIn('guest-engagement-overlay-imgwrap')">+</button>
+        <button class="zoom-reset-btn" onclick="zoomReset('guest-engagement-overlay-imgwrap')">Reset</button>
+      </div>
+    </div>
+    <div class="overlay-bullets-col">
+      <p class="overlay-bullets-label">Key points</p>
+      <ul class="overlay-bullets">
+        <li><span class="overlay-bullet-dot"></span><span><strong class="overlay-bullet-title">Reach guests on any channel — including OTA guests you'd otherwise miss</strong>Most communication tools only work if you own the guest's email. Guest Engagement can communicate via email, SMS, WhatsApp, Airbnb, and Booking.com — and can reach guests who booked through OTAs, even when their email is hidden.</span></li>
+        <li><span class="overlay-bullet-dot"></span><span><strong class="overlay-bullet-title">Send the right message at the right time — automatically</strong>Guest Engagement triggers messages based on where a guest is at in their journey — for example upgrade offers before arrival or rebooking incentives after checkout. Without a guest's reservation details, a generic communications tool will not be able to trigger emails or messages at these key moments.</span></li>
+        <li><span class="overlay-bullet-dot"></span><span><strong class="overlay-bullet-title">Give guests somewhere to actually buy, not just read</strong>Most email tools stop at the send. Guest Engagement includes a built-in digital directory where guests can browse offers and purchase — so the full path from campaign to conversion is in one place.</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ── IMAGE ZOOM & PAN ──
+const zoomState = {};
+
+function initZoom(wrapId) {
+  if (zoomState[wrapId]) return;
+  const wrap = document.getElementById(wrapId);
+  const img = wrap.querySelector('img');
+  zoomState[wrapId] = { scale: 1, x: 0, y: 0, dragging: false, startX: 0, startY: 0, lastX: 0, lastY: 0 };
+
+  // Track mousedown position to distinguish click vs drag
+  wrap.addEventListener('mousedown', function(e) {
+    const s = zoomState[wrapId];
+    s.mouseDownX = e.clientX;
+    s.mouseDownY = e.clientY;
+    s.didDrag = false;
+    if (s.scale === 1) return;
+    s.dragging = true;
+    s.startX = e.clientX - s.x;
+    s.startY = e.clientY - s.y;
+    wrap.classList.add('grabbing');
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', function(e) {
+    const s = zoomState[wrapId];
+    if (!s.dragging) return;
+    const dx = e.clientX - s.mouseDownX;
+    const dy = e.clientY - s.mouseDownY;
+    // Only mark as drag if moved more than 4px
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) s.didDrag = true;
+    s.x = e.clientX - s.startX;
+    s.y = e.clientY - s.startY;
+    clampPosition(wrapId);
+    applyTransform(wrapId);
+  });
+
+  window.addEventListener('mouseup', function() {
+    const s = zoomState[wrapId];
+    if (!s.dragging) return;
+    s.dragging = false;
+    wrap.classList.remove('grabbing');
+  });
+
+  // Click to toggle zoom — only fires if it wasn't a drag
+  img.addEventListener('click', function(e) {
+    const s = zoomState[wrapId];
+    if (s.didDrag) { s.didDrag = false; return; }
+    if (s.scale === 1) {
+      const rect = wrap.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+      s.scale = 2.5;
+      s.x = -(clickX * (s.scale - 1));
+      s.y = -(clickY * (s.scale - 1));
+      clampPosition(wrapId);
+      wrap.classList.add('zoomed');
+    } else {
+      zoomReset(wrapId);
+    }
+    applyTransform(wrapId);
+    updateLabel(wrapId);
+  });
+
+  // Scroll wheel zoom
+  wrap.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    const s = zoomState[wrapId];
+    const rect = wrap.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const delta = e.deltaY > 0 ? -0.25 : 0.25;
+    const newScale = Math.min(5, Math.max(1, s.scale + delta));
+    if (newScale === s.scale) return;
+    // Zoom toward mouse position
+    const scaleRatio = newScale / s.scale;
+    s.x = mouseX - scaleRatio * (mouseX - s.x);
+    s.y = mouseY - scaleRatio * (mouseY - s.y);
+    s.scale = newScale;
+    clampPosition(wrapId);
+    if (s.scale === 1) {
+      wrap.classList.remove('zoomed');
+    } else {
+      wrap.classList.add('zoomed');
+    }
+    applyTransform(wrapId);
+    updateLabel(wrapId);
+  }, { passive: false });
+}
+
+function clampPosition(wrapId) {
+  const wrap = document.getElementById(wrapId);
+  const img = wrap.querySelector('img');
+  const s = zoomState[wrapId];
+  const wrapW = wrap.offsetWidth;
+  const wrapH = wrap.offsetHeight;
+  const imgW = img.offsetWidth * s.scale;
+  const imgH = img.offsetHeight * s.scale;
+  const maxX = 0;
+  const minX = Math.min(0, wrapW - imgW);
+  const maxY = 0;
+  const minY = Math.min(0, wrapH - imgH);
+  s.x = Math.min(maxX, Math.max(minX, s.x));
+  s.y = Math.min(maxY, Math.max(minY, s.y));
+}
+
+function applyTransform(wrapId) {
+  const wrap = document.getElementById(wrapId);
+  const img = wrap.querySelector('img');
+  const s = zoomState[wrapId];
+  img.style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.scale})`;
+  img.style.transformOrigin = '0 0';
+}
+
+function zoomIn(wrapId) {
+  initZoom(wrapId);
+  const s = zoomState[wrapId];
+  const wrap = document.getElementById(wrapId);
+  const newScale = Math.min(5, s.scale + 0.5);
+  const cx = wrap.offsetWidth / 2;
+  const cy = wrap.offsetHeight / 2;
+  const scaleRatio = newScale / s.scale;
+  s.x = cx - scaleRatio * (cx - s.x);
+  s.y = cy - scaleRatio * (cy - s.y);
+  s.scale = newScale;
+  clampPosition(wrapId);
+  wrap.classList.add('zoomed');
+  applyTransform(wrapId);
+  updateLabel(wrapId);
+}
+
+function zoomOut(wrapId) {
+  initZoom(wrapId);
+  const s = zoomState[wrapId];
+  const wrap = document.getElementById(wrapId);
+  const newScale = Math.max(1, s.scale - 0.5);
+  const cx = wrap.offsetWidth / 2;
+  const cy = wrap.offsetHeight / 2;
+  const scaleRatio = newScale / s.scale;
+  s.x = cx - scaleRatio * (cx - s.x);
+  s.y = cy - scaleRatio * (cy - s.y);
+  s.scale = newScale;
+  clampPosition(wrapId);
+  if (s.scale === 1) { s.x = 0; s.y = 0; wrap.classList.remove('zoomed'); }
+  applyTransform(wrapId);
+  updateLabel(wrapId);
+}
+
+function zoomReset(wrapId) {
+  initZoom(wrapId);
+  const s = zoomState[wrapId];
+  const wrap = document.getElementById(wrapId);
+  s.scale = 1; s.x = 0; s.y = 0;
+  wrap.classList.remove('zoomed');
+  applyTransform(wrapId);
+  updateLabel(wrapId);
+}
+
+function updateLabel(wrapId) {
+  const label = document.getElementById(wrapId.replace('-imgwrap','') + '-zoom-label');
+  if (label) label.textContent = Math.round(zoomState[wrapId].scale * 100) + '%';
+}
+
+// Auto-init zoom when overlays become visible — observe class changes
+document.addEventListener('DOMContentLoaded', function() {
+  var insightsEl = document.getElementById('insights-overlay');
+  var forecastEl = document.getElementById('forecasting-overlay');
+
+  if (insightsEl) {
+    new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        if (insightsEl.classList.contains('active')) {
+          setTimeout(function() { initZoom('insights-overlay-imgwrap'); }, 50);
+        } else {
+          if (zoomState['insights-overlay-imgwrap']) zoomReset('insights-overlay-imgwrap');
+        }
+      });
+    }).observe(insightsEl, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  if (forecastEl) {
+    new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        if (forecastEl.classList.contains('active')) {
+          setTimeout(function() { initZoom('forecasting-overlay-imgwrap'); }, 50);
+        } else {
+          if (zoomState['forecasting-overlay-imgwrap']) zoomReset('forecasting-overlay-imgwrap');
+        }
+      });
+    }).observe(forecastEl, { attributes: true, attributeFilter: ['class'] });
+  }
+});
+</script>
+
+</body>
+</html>
