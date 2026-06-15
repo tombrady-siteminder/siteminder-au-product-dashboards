@@ -13,24 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install staticrypt
-        run: npm install -g staticrypt@3.5.4
-
-      - name: Add Heap + favicon + encrypt any unencrypted pages
-        env:
-          STATICRYPT_PASSWORD: ${{ secrets.STATICRYPT_PASSWORD }}
+      - name: Add Heap + favicon to any unprocessed pages
         run: |
           python3 << 'PYEOF'
-          import os, subprocess, sys
+          import os
 
-          SALT = "2679e05bf9062f280676dc7dc9cf97fd"
           HEAP_SNIPPET = '<script>window.heap=window.heap||[],heap.load=function(e,t){window.heap.appid=e,window.heap.config=t=t||{};var r=document.createElement("script");r.type="text/javascript",r.async=!0,r.src="https://cdn.heapanalytics.com/js/heap-"+e+".js";var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(r,a);for(var n=function(e){return function(){heap.push([e].concat(Array.prototype.slice.call(arguments,0)))}},p=["addEventProperties","addUserProperties","clearEventProperties","identify","resetIdentity","removeEventProperty","setEventProperties","track","unsetEventProperty"],o=0;o<p.length;o++)heap[p[o]]=n(p[o])};heap.load("1527560549");<\/script>'
           FAVICON_TAG = '<link rel="icon" type="image/png" href="/siteminder-au-product-dashboards/favicon.png">'
-          PASSWORD = os.environ["STATICRYPT_PASSWORD"]
+          PROCESSED_MARKER = '<!-- sm-processed -->'
 
           changed = False
 
@@ -41,31 +31,26 @@ jobs:
               path = os.path.join(root, "index.html")
               with open(path) as f:
                   content = f.read()
-              if "staticrypt-html" in content:
+              if PROCESSED_MARKER in content:
                   continue
               print(f"Processing: {path}")
               modified = False
-              if "favicon.png" not in content and "<meta name=\"viewport\"" in content:
+              if "favicon.png" not in content and '<meta name="viewport"' in content:
                   content = content.replace('<meta name="viewport"', f'{FAVICON_TAG}\n  <meta name="viewport"', 1)
                   modified = True
               if "1527560549" not in content and "</head>" in content:
-                  content = content.replace("</head>", f"  {HEAP_SNIPPET}\n</head>", 1)
+                  content = content.replace("</head>", f"  {HEAP_SNIPPET}\n  {PROCESSED_MARKER}\n</head>", 1)
+                  modified = True
+              elif PROCESSED_MARKER not in content and "</head>" in content:
+                  content = content.replace("</head>", f"  {PROCESSED_MARKER}\n</head>", 1)
                   modified = True
               if modified:
                   with open(path, "w") as f:
                       f.write(content)
-              dirname = os.path.dirname(path) or "."
-              result = subprocess.run(
-                  ["staticrypt", "index.html", "-p", PASSWORD, "--remember", "30", "-s", SALT, "-d", ".", "--short"],
-                  cwd=dirname, capture_output=True, text=True
-              )
-              if result.returncode != 0:
-                  print(f"ERROR encrypting {path}: {result.stderr}", file=sys.stderr)
-              else:
-                  print(f"  encrypted {path}")
+                  print(f"  done: {path}")
                   changed = True
 
-          print("Pages processed." if changed else "No unencrypted pages found - nothing to do.")
+          print("Pages processed." if changed else "No new pages found.")
           PYEOF
 
       - name: Commit processed pages
@@ -76,6 +61,6 @@ jobs:
             echo "Nothing to commit."
           else
             git add -A
-            git commit -m "Auto: add Heap + favicon + encrypt new dashboard pages"
+            git commit -m "Auto: add Heap + favicon to new dashboard pages"
             git push
           fi
